@@ -1,0 +1,6 @@
+/** Login Configuration for the JAAS Sample Application **/
+
+Jdb {
+   com.jdb.security.JdbLoginModule required debug=true;
+};
+

@@ -1,0 +1,1343 @@
+package com.server;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+
+import com.Temp;
+import com.amef.AMEFDecodeException;
+import com.amef.AMEFEncodeException;
+import com.amef.JDBEncoder;
+import com.amef.JDBObject;
+import com.jdb.JdbNewDR;
+import com.jdb.JdbResources;
+import com.jdb.Reader;
+
+public class TestClient
+{
+	
+	static Map<String,String> whrandcls = null;
+	static Map<String,String> whrorcls = null;
+	static Map<String,Integer> whrclsInd = null;
+	static Map<Integer,String> whrclsIndv = null;
+	static Map<Integer,String> whrclsIndt = null;
+	static Map<String,String> mappik = new LinkedHashMap<String,String>();
+	static Map<String,String> mappikt = new HashMap<String,String>();
+	static ExecutorService execs = Executors.newFixedThreadPool(2);
+	
+	static class Session
+	{
+		Map<String,List> trxObjs = null;
+		List<byte[]> updates = null;
+		Map<String,Integer> trxObjLens = null;
+		JdbNewDR reader = null;
+		SocketChannel sock = null;
+		int qsize = 0;
+		boolean trans = false;
+		int factor = 100000;
+		public Session()
+		{
+			reader = new JdbNewDR();
+			try
+			{
+				sock = SocketChannel.open(new InetSocketAddress("localhost",7001));
+				sock.socket().setReceiveBufferSize(100240000);
+				trxObjs = new HashMap<String, List>();
+				trxObjLens = new HashMap<String, Integer>();
+				updates = new ArrayList<byte[]>();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}			
+		}		
+		public void beginTransaction()
+		{			
+			JDBObject query = new JDBObject();
+			query.addPacket("start transaction");			
+			try
+			{
+				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				query = null;
+				ByteBuffer buf = ByteBuffer.allocate(data.length);
+				buf.put(data);
+				buf.flip();
+				sock.write(buf);	
+				buf = null;
+				reader.reset1();
+				while(!reader.isDone())
+				{
+					data = reader.readLim4(sock,2);
+				}
+				if(data[0]==1)
+				{
+					System.out.println("Transation started");
+					trans = true;
+				}
+				else
+					System.out.println("Transation could not be started");
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		public void flush() throws Exception
+		{
+			partialCommit();
+		}
+		
+		public void commit() throws Exception
+		{
+			if(!trans)
+				return;			
+			reader.reset1();
+			if(trxObjs.size()>0)
+			{	
+				partialCommit();
+				for (int i = 0; i < updates.size(); i++)
+				{
+					ByteBuffer buf = ByteBuffer.allocate(updates.get(i).length);
+					buf.put(updates.get(i));
+					buf.flip();
+					sock.write(buf);	
+					buf = null;
+					byte[] data = null;
+					reader.reset1();
+					while(!reader.isDone())
+					{
+						data = reader.readLim4(sock,2);
+					}
+					if(data[0]==1)
+						System.out.println("Updated Row");
+					else
+						System.out.println("Updated failed");
+				}
+				JDBObject query = new JDBObject();
+				query.addPacket("commit");
+				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				query = null;
+				ByteBuffer buf = ByteBuffer.allocate(data.length);
+				buf.put(data);
+				buf.flip();
+				try
+				{
+					sock.write(buf);	
+					buf = null;
+					reader.reset1();
+					while(!reader.isDone())
+					{
+						data = reader.readLim4(sock,2);
+					}
+					if(data[0]==1)
+						System.out.println("Commit succeded");
+					else
+						System.out.println("Commit failed");
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		private void singleInsert(String table,byte[] dat) throws AMEFEncodeException
+		{
+			reader.reset1();
+			JDBObject query = new JDBObject();
+			query.addPacket("insert into "+mappikt.get(table)+" values(2,'ssd')");
+			query.addPacket(dat);
+			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			query = null;
+			ByteBuffer buf = ByteBuffer.allocate(data.length);
+			buf.put(data);
+			buf.flip();
+			try
+			{
+				sock.write(buf);
+				buf = null;
+				while(!reader.isDone())
+				{
+					data = reader.readLim4(sock,2);
+				}
+				if(data[0]==1)
+					System.out.println("JDB: 1 Row inserted");
+				else
+					System.out.println("JDB: Insert Failed");
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			reader.reset1();
+		}
+		
+		public void partialCommit() throws Exception
+		{
+			//if(!trans)
+			//	return;
+			reader.reset1();
+			if(trxObjs.size()>0)
+			{				
+				for (Map.Entry<String,List> entry : trxObjs.entrySet())
+				{
+					if(qsize>0)
+					{						
+						int lim = qsize/factor,rem=qsize%factor;
+						for (int j = 0; j < lim; j++)
+						{
+							JDBObject query = new JDBObject();
+							query.addPacket("insert into "+mappikt.get(entry.getKey())+" values(2,'ssd')");
+							ByteBuffer buffe = ByteBuffer.allocate(trxObjLens.get(entry.getKey()));
+							//for (int i = lim*factor; i < lim*factor+rem; i++)
+							while(qsize>j*factor)
+							{
+								buffe.put((byte[])((LinkedList)entry.getValue()).removeFirst());
+								qsize--;
+							}
+							buffe.flip();
+							query.addPacket(buffe.array());
+							byte[] data = JdbResources.getEncoder().encodeB(query, false);
+							query = null;
+							ByteBuffer buf = ByteBuffer.allocate(data.length);
+							buf.put(data);
+							buf.flip();
+							try
+							{
+								sock.write(buf);
+								trxObjLens.put(entry.getKey(), trxObjLens.get(entry.getKey())-buffe.limit());
+								buf = null;
+								while(!reader.isDone())
+								{
+									data = reader.readLim4(sock,2);
+								}
+								if(data[0]==1)
+									System.out.println("JDB: 1 Row inserted");
+								else
+									System.out.println("JDB: Insert Failed");
+							}
+							catch (Exception e)
+							{
+								e.printStackTrace();
+							}
+							reader.reset1();
+						}
+						if(rem>0)
+						{
+							/*JDBObject query = new JDBObject();
+							query.addPacket("insert into "+mappikt.get(entry.getKey())+" values(2,'ssd')");*/
+							ByteBuffer buffe = ByteBuffer.allocate(trxObjLens.get(entry.getKey()));
+							while(qsize>0)
+							{
+								buffe.put((byte[])((LinkedList)entry.getValue()).removeFirst());
+								qsize--;
+							}
+							buffe.flip();
+							singleInsert(entry.getKey(), buffe.array());
+							/*query.addPacket(buffe.array());
+							byte[] data = JdbResources.getEncoder().encodeB(query, false);
+							query = null;
+							ByteBuffer buf = ByteBuffer.allocate(data.length);
+							buf.put(data);
+							buf.flip();
+							try
+							{
+								sock.write(buf);
+								trxObjLens.put(entry.getKey(), trxObjLens.get(entry.getKey())-buffe.limit());
+								buf = null;
+								while(!reader.isDone())
+								{
+									data = reader.readLim4(sock,2);
+								}
+								if(data[0]==1)
+									System.out.println("JDB: 1 Row inserted");
+								else
+									System.out.println("JDB: Insert Failed");
+							}
+							catch (Exception e)
+							{
+								e.printStackTrace();
+							}
+							reader.reset1();*/
+						}						
+					}
+				}
+			}			
+		}
+		public void rollback()
+		{
+			if(!trans)
+				return;
+			trxObjs = null;
+			JDBObject query = new JDBObject();
+			query.addPacket("rollback");			
+			try
+			{
+				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				query = null;
+				ByteBuffer buf = ByteBuffer.allocate(data.length);
+				buf.put(data);
+				buf.flip();
+				sock.write(buf);	
+				buf = null;
+				reader.reset1();
+				while(!reader.isDone())
+				{
+					data = reader.readLim4(sock,2);
+				}
+				if(data[0]==1)
+				{
+					System.out.println("Rollback succeeded");
+					trans = true;
+				}
+				else
+					System.out.println("Rollback failed");
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		@SuppressWarnings("unchecked")
+		public void save(Object object) throws Exception
+		{
+			/*JDBObject row = getRow(object);
+			System.out.println(getRowValue(object));
+			row.addPacket("11-12-2010 12:12:12");
+			row.addPacket(true);
+			row.addPacket('Y');*/
+			String table = object.getClass().toString().replaceFirst("class ", "");			
+			byte[] dat = getRowValue(object);
+			if(!trans)
+			{
+				singleInsert(table, dat);
+				return;
+			}
+			if(!trxObjs.containsKey(table))
+			{
+				trxObjs.put(table, new LinkedList());
+				trxObjLens.put(table, 0);
+			}
+			trxObjs.get(table).add(dat);
+			trxObjLens.put(table, trxObjLens.get(table)+dat.length);
+			qsize++;
+			if(qsize==factor || !trans)
+				partialCommit();
+		}
+		
+		public void update(Object object) throws Exception
+		{
+			String table = object.getClass().toString().replaceFirst("class ", "");
+			byte[] dat = JdbResources.getEncoder().encodeB(getUpdateRow(object),false);
+			JDBObject query = new JDBObject();
+			query.addPacket("update temp1 set id=22 where id=13");
+			query.addPacket(dat);
+			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			if(trans)
+			{
+				updates.add(data);
+				return;
+			}
+			query = null;
+			ByteBuffer buf = ByteBuffer.allocate(data.length);
+			buf.put(data);
+			buf.flip();
+			try
+			{
+				sock.write(buf);
+				reader.reset1();
+				buf = null;
+				while(!reader.isDone())
+				{
+					data = reader.readLim4(sock,2);
+				}
+				if(data[0]==1)
+					System.out.println("JDB: 1 Row Updated");
+				else
+					System.out.println("JDB: Update Failed");
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			reader.reset1();
+		}
+		
+		public List select() throws Exception
+		{
+			List objects = new LinkedList();
+			JDBObject query = new JDBObject();
+			query.addPacket("select * from temp1");
+			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			ByteBuffer buf = ByteBuffer.allocate(data.length);
+			buf.put(data);
+			buf.flip();
+			long rdtim = 0,odtim = 0;
+			try
+			{
+				sock.write(buf);			
+				JdbAMEFObjMaker maker = new JdbAMEFObjMaker();
+				JdbAMEFReader amefRead = new JdbAMEFReader(reader,sock,maker);
+				FutureTask amefReadTask = new FutureTask(amefRead);
+				FutureTask<List> makerTask = new FutureTask<List>(maker);
+				execs.execute(amefReadTask);
+				execs.execute(makerTask);
+				amefReadTask.get();
+				objects = makerTask.get();
+				execs.shutdown();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			System.out.println("time reqd for comlpetion = "+(System.currentTimeMillis()-stt)
+					+"\nSize of objects = "+(objects.size())
+					+"\nTime to read = "+(rdtim)
+					+"\nTime to object = "+(odtim));
+			return objects;
+		}
+	}
+	
+	static class DMLResReader implements Callable
+	{
+		JdbDataReader reader;
+		SocketChannel sock;
+		public DMLResReader(JdbDataReader reader, SocketChannel sock)
+		{
+			super();
+			this.reader = reader;
+			this.sock = sock;
+		}
+
+		public Object call() throws Exception
+		{	
+			long st = System.currentTimeMillis();
+			byte data[] = null;
+			while(!reader.isDone())
+			{
+				data = reader.read(sock,2);
+			}
+			tim += (System.currentTimeMillis()-st);
+			if(data[0]==1)
+				System.out.println("1 Row inserted");
+			else
+				System.out.println("Insert Failed");
+			return null;
+		}
+	}
+	
+	static class Temp implements Serializable
+	{
+		public Temp()
+		{
+			
+		}
+		//private static final long serialVersionUID = -7070060949055791230L;
+		int id;
+		String name;
+	}
+	/**
+	 * @param args
+	 * @throws Exception 
+	 */
+	static long stt = 0;
+	public static void main(String[] args) throws Exception
+	{
+		try
+		{
+			int val = JdbResources.byteArrayToInt(new byte[]{-113});
+			System.out.println(JdbResources.intToByteArrayS(val, 1));
+			//System.out.println(val);
+			//byte[] rt = JdbResources.intToByteArrayS(val, 1).getBytes();
+			//System.out.println(JdbResources.byteArrayToInt(rt));
+			Integer ie = -113;
+			System.out.println(Integer.toHexString(ie));
+			for (int i = -128; i < 129; i++)
+			{
+				//System.out.println((char)i + " -> " + i + " -> " + JdbResources.byteArrayToInt(JdbResources.intToByteArrayS(i,1).getBytes()));
+			}
+			mappik.put("class", "com.Temp");
+			mappik.put("id", "id");
+			mappik.put("name", "name");
+			mappik.put("date1", "date1");
+			mappik.put("flag", "flag");
+			mappik.put("ind", "ind");
+			
+			mappikt.put("com.Temp", "temp1");
+			mappikt.put("id", "int");
+			mappikt.put("name", "java.lang.String");
+			mappikt.put("date1", "java.lang.String");
+			mappikt.put("flag", "boolean");
+			mappikt.put("ind", "char");
+			
+			JdbNewDR reader = new JdbNewDR();
+			JdbResources.getDecoder();
+			JdbResources.getEncoder();
+			SocketChannel sock = null;//SocketChannel.open(new InetSocketAddress("localhost",7001));
+			//sock.configureBlocking(false);
+			//sock.socket().setReceiveBufferSize(100240000);
+			//sock.configureBlocking(false);
+			JDBObject object = new JDBObject();
+			object.addPacket(13);
+			object.addPacket("saumil");
+			object.addPacket("11-12-2010 12:12:12");
+			object.addPacket(true);
+			object.addPacket('Y');
+			
+			com.Temp tem = new com.Temp();
+			List objt =  new ArrayList();
+			tem.id  = 14;
+			tem.name = "ccccccc";
+			//tem.date1 = "11-12-2010 12:12:12";
+			//tem.flag = true;
+			//tem.ind = 'Y';
+			long st = System.currentTimeMillis();
+			Session session = new Session();
+			session.beginTransaction();
+			for (int i = 0; i < 100000; i++)
+			{
+				session.save(tem);
+				//session.flush();
+			}
+			com.Temp tem1 = new com.Temp();
+			tem1.id  = 22;
+			//session.update(tem1);
+			session.commit();
+			//System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
+			System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
+			st = System.currentTimeMillis();
+			System.out.println("Time for select "+session.select().size()+" = "+(System.currentTimeMillis()-st));
+			/*long st1 = System.currentTimeMillis();stt=st1;
+			String query1 = "select * from temp1";
+			List<JDBObject> data = execute(query1,sock,true,reader);	
+			System.out.println("Time reqd for selects = "+(System.currentTimeMillis()-st1)+"\n");
+			
+			st1 = System.currentTimeMillis();stt=st1;
+			query1 = "select * from temp1";
+			data = execute(query1,sock,true,reader);	
+			System.out.println("Time reqd for selects 2 = "+(System.currentTimeMillis()-st1)+"\n");
+			
+			st1 = System.currentTimeMillis();stt=st1;
+			query1 = "select * from temp1";
+			data = execute(query1,sock,true,reader);	
+			System.out.println("Time reqd for selects 3 = "+(System.currentTimeMillis()-st1)+"\n");*/
+			
+			/*long st = System.currentTimeMillis();
+			String query = "insert into temp1 values(13,'saumil','12-12-12 12:12:12','1','N')";
+			for (int i = 0; i < 1000; i++)
+			{
+				execute(query, sock, tem, reader);
+				//bulkexecute(query, sock, object, reader, 10000);
+			}
+			for (int i = 0; i < 10000; i++)
+			{
+				objt.add(tem);
+			}		
+			bulkexecute(query, sock, objt, reader);
+			long st1 = System.currentTimeMillis();stt=st1;
+			String query1 = "select * from temp1";
+			List<JDBObject> data = execute(query1,sock,true,reader);
+			System.out.println("Time reqd for inserts = "+(st1-st)+"\nTime for recv resp = "+tim);	
+			//System.out.println("Time reqd for selects = "+(System.currentTimeMillis()-st1)+"\n");*/
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	
+	
+	protected static List<JDBObject> getAMEFObjects(byte[] data1)
+	{
+		List<JDBObject> objects = new ArrayList<JDBObject>();
+		try
+		{
+			InputStream jdbin = new ByteArrayInputStream(data1);
+			while(jdbin.available()>4)
+			{
+				byte[] length = new byte[4];
+				jdbin.read(length);
+				int lengthm = ((length[0] & 0xff) << 24) | ((length[1] & 0xff) << 16)
+								| ((length[2] & 0xff) << 8) | ((length[3] & 0xff));
+				byte[] data = new byte[lengthm];
+				jdbin.read(data);
+				objects.add(JdbResources.getDecoder().decodeB(data, false, false));
+			}
+		}
+		catch (IOException e)
+		{
+			
+		}
+		catch (AMEFDecodeException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return objects;
+	}
+	
+	private static boolean bulkexecute(String query,SocketChannel sock,List<Object> obrows, JdbDataReader reader) throws Exception
+	{	
+		reader.reset();
+		List<JDBObject> rows = getRows(obrows);
+		JDBObject quer = buildQuery(query,rows);
+		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		ByteBuffer buf = ByteBuffer.allocate(data.length);
+		buf.put(data);
+		buf.flip();
+		try
+		{
+			sock.write(buf);
+			while(!reader.isDone())
+			{
+				data = reader.read(sock,2);
+			}
+			/*if(data[0]==1)
+				System.out.println("1 Row inserted");
+			else
+				System.out.println("Insert Failed");*/
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	static long tim = 0;
+	
+	
+	
+	private static boolean execute(String query,SocketChannel sock,Object obj, JdbDataReader reader) throws Exception
+	{			
+		reader.reset();		
+		DMLResReader dmlRead = new DMLResReader(reader,sock);	
+		JDBObject row = getRow(obj);
+		row.addPacket("11-12-2010 12:12:12");
+		row.addPacket(true);
+		row.addPacket('Y');
+		JDBObject quer = buildQuerys(query,row);
+		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		ByteBuffer buf = ByteBuffer.allocate(data.length);
+		buf.put(data);
+		buf.flip();
+		try
+		{
+			long ts = System.currentTimeMillis();
+			sock.write(buf);	
+			/*FutureTask dmlReadTask = new FutureTask(dmlRead);
+			execs.execute(dmlReadTask);
+							
+			dmlReadTask.get();
+			execs.shutdown();*/
+			while(!reader.isDone())
+			{
+				data = reader.read(sock,2);
+			}
+			/*if(data[0]==1)
+				System.out.println("1 Row inserted");
+			else
+				System.out.println("Insert Failed");*/
+			tim += (System.currentTimeMillis()-ts);
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	private static List<JDBObject> getRows(List<Object> obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	{
+		List<JDBObject> rows = new ArrayList<JDBObject>();
+		for (Object object : obj)
+		{
+			rows.add(getRow(object));
+		}
+		return rows;
+	}
+	
+	private static JDBObject getRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	{
+		String clz = obj.getClass().toString().replaceFirst("class ", "");
+		JDBObject obja =  new JDBObject();		
+		if(mappik.containsValue(clz))
+		{
+			Class claz = Class.forName(clz);
+			for (Map.Entry<String,String> entry : mappik.entrySet())
+			{
+				if(!entry.getKey().equals("class"))
+				{
+					Object prop = claz.getDeclaredField(entry.getValue()).get(obj);
+					if(prop.getClass().toString().equals("class java.lang.String"))
+					{
+						obja.addPacket((String)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Integer"))
+					{
+						obja.addPacket((Integer)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Long"))
+					{
+						obja.addPacket((Long)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Double"))
+					{
+						obja.addPacket((Double)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Float"))
+					{
+						obja.addPacket((Float)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Boolean"))
+					{
+						obja.addPacket((Boolean)prop,entry.getKey());
+					}
+					else if(prop.getClass().toString().equals("class java.lang.Character"))
+					{
+						obja.addPacket((Character)prop,entry.getKey());
+					}
+				}
+			}			
+		}
+		return obja;
+	}
+	
+	private static JDBObject getUpdateRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	{
+		String clz = obj.getClass().toString().replaceFirst("class ", "");
+		JDBObject obja =  new JDBObject();		
+		if(mappik.containsValue(clz))
+		{
+			Class claz = Class.forName(clz);
+			for (Map.Entry<String,String> entry : mappik.entrySet())
+			{
+				if(!entry.getKey().equals("class"))
+				{
+					Object prop = claz.getDeclaredField(entry.getValue()).get(obj);
+					if(prop!=null && prop.getClass().toString().equals("class java.lang.String"))
+					{
+						obja.addPacket((String)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Integer"))
+					{
+						obja.addPacket((Integer)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Long"))
+					{
+						obja.addPacket((Long)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Double"))
+					{
+						obja.addPacket((Double)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Float"))
+					{
+						obja.addPacket((Float)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Boolean"))
+					{
+						obja.addPacket((Boolean)prop,entry.getKey());
+					}
+					else if(prop!=null && prop.getClass().toString().equals("class java.lang.Character"))
+					{
+						obja.addPacket((Character)prop,entry.getKey());
+					}
+				}
+			}			
+		}
+		return obja;
+	}
+	
+	private static byte[] getRowValue(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException, AMEFEncodeException, UnsupportedEncodingException
+	{
+		String clz = obj.getClass().toString().replaceFirst("class ", "");
+		byte[][] arrr = new byte[mappik.size()-1][];
+		int alllen = 0;
+		int pos = 0;
+		if(mappik.containsValue(clz))
+		{
+			Class claz = Class.forName(clz);
+			for (Map.Entry<String,String> entry : mappik.entrySet())
+			{
+				if(!entry.getKey().equals("class"))
+				{
+					Field prop = claz.getDeclaredField(entry.getValue());
+					if(prop.getType().toString().equals("class java.lang.String"))
+					{
+						if(prop.get(obj)!=null) arrr[pos++] = JdbResources.getEncoder().getPacketValue((String)prop.get(obj));
+						else arrr[pos++] = new byte[]{'t',0x00};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("int") 
+							|| prop.getType().toString().equals("class java.lang.Integer"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Integer)prop.get(obj));
+						else arrr[pos++] = new byte[]{'n',0x00};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("long") 
+							|| prop.getType().toString().equals("class java.lang.Long"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Long)prop.get(obj));
+						else arrr[pos++] = new byte[]{'n',0x00};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("double") 
+							|| prop.getType().toString().equals("class java.lang.Double"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Double)prop.get(obj));
+						else arrr[pos++] = new byte[]{'t',0x00};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("float") 
+							|| prop.getType().toString().equals("class java.lang.Float"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Float)prop.get(obj));
+						else arrr[pos++] = new byte[]{'t',0x00};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("boolean") 
+							|| prop.getType().toString().equals("class java.lang.Boolean"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Boolean)prop.get(obj));
+						else arrr[pos++] = new byte[]{'b','0'};
+						alllen += arrr[pos-1].length;
+					}
+					else if(prop.getType().toString().equals("char") 
+							|| prop.getType().toString().equals("class java.lang.Character"))
+					{
+						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Character)prop.get(obj));
+						else arrr[pos++] = new byte[]{'c','0'};
+						alllen += arrr[pos-1].length;
+					}
+				}
+			}			
+		}
+		byte[] fin = null;
+		pos = 0;
+		if(alllen<256)
+		{
+			fin = new byte[alllen+2];
+			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
+			byte[] len = JdbResources.longToByteArray(alllen, 1);
+			System.arraycopy(len, 0, fin, 1, len.length);
+			pos = 2;
+		}
+		else if(alllen<65536)
+		{
+			fin = new byte[alllen+3];
+			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
+			byte[] len = JdbResources.longToByteArray(alllen, 2);
+			System.arraycopy(len, 0, fin, 1, len.length);pos = 3;
+		}
+		else if(alllen<16777216)
+		{
+			fin = new byte[alllen+4];
+			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
+			byte[] len = JdbResources.longToByteArray(alllen, 3);
+			System.arraycopy(len, 0, fin, 1, len.length);pos = 4;
+		}
+		else
+		{
+			fin = new byte[alllen+5];
+			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
+			byte[] len = JdbResources.longToByteArray(alllen, 4);pos = 4;
+			System.arraycopy(len, 0, fin, 1, len.length);
+		}
+		for (int i = 0; i < arrr.length; i++)
+		{
+			System.arraycopy(arrr[i], 0, fin, pos, arrr[i].length);
+			pos += arrr[i].length;
+		}
+		return fin;
+	}
+
+	static class JdbAMEFReader implements Callable
+	{
+		JdbNewDR reader;
+		SocketChannel sock;
+		JdbAMEFObjMaker maker;
+		public JdbAMEFReader(JdbNewDR reader, SocketChannel sock,
+				JdbAMEFObjMaker maker)
+		{
+			super();
+			this.reader = reader;
+			this.sock = sock;
+			this.maker = maker;
+		}
+
+		public Object call() throws Exception
+		{	
+			long st = System.currentTimeMillis();
+			int i = 0;
+			reader.reset4();
+			outer : while(i<2)
+			{
+				byte[] data = null;
+				while(!reader.isDone())
+				{					
+					data = reader.readLim4(sock,1);
+					//Thread.sleep(1);
+					if(reader.isReaderDone())
+						break outer;
+				}
+				reader.reset4();
+				maker.addToQ(data);
+				i++;
+			}
+			reader.reset1();
+			outer : while(!reader.isReaderDone())
+			{
+				byte[] data = null;
+				while(!reader.isDone())
+				{					
+					data = reader.readLim1(sock,1);
+					//Thread.sleep(1);
+					if(reader.isReaderDone())
+						break outer;
+				}
+				reader.reset1();
+				maker.addToQ(data);
+			}
+			/*JDBObject amef = new JDBObject();
+			amef.setName("DONE");
+			amef.addPacket(true);
+			String dat = JdbResources.getEncoder().encodeS(amef, false);
+			dat = dat.substring(4);*/
+			maker.addToQ(new byte[]{'F'});
+			//System.out.println("Time to finish reader task ="+( System.currentTimeMillis() -st));
+			return null;
+		}
+	}
+	
+	static class JdbAMEFObjMaker implements Callable
+	{
+		private ConcurrentLinkedQueue<byte[]> q;
+		private List objects = null;
+		public boolean done = false;
+		public JdbAMEFObjMaker()
+		{
+			q = new ConcurrentLinkedQueue<byte[]>();
+			objects = new ArrayList();
+		}
+		public void addToQ(byte[] data)
+		{
+			q.add(data);
+		}
+		public Object call() throws Exception
+		{
+			long st = System.currentTimeMillis();
+			byte[] data = null;
+			JDBObject tabDet = null;
+			int num = 0;
+			outer : while(true)
+			{
+				while((data=q.poll())==null)
+				{
+					Thread.sleep(0,100);
+				}
+				JDBObject obh = null;
+				if(num<=1)
+					obh = JdbResources.getDecoder().decodeB(data, false, false);
+				else if(!(data.length==1 && data[0]=='F'))
+					obh = JdbResources.getDecoder().decodeB(data, false, true);
+				else
+					break outer;
+				if(num==0)//obh.getName().equals("TABLE_COLUMN_DET"))
+				{					
+					if(tabDet==null)
+					{
+						tabDet = obh;	
+						/*for (JDBObject b: tabDet.getPackets())
+						{
+							build.append(b.getName()+"\t");
+						}
+						build.append("\n");*/
+						//initializeMapping(tabDet);
+					}
+				}
+				else if(num==1)//obh.getName().equals("TABLE_CLASS_MAP"))
+				{
+					/*if(mapping==null)
+					{
+						JDBObject tabDet1 = obh;
+						mapping = new HashMap<String, String>();
+						for (JDBObject b: tabDet1.getPackets())
+						{
+							mapping.put(b.getNameStr(),new String(b.getValue()));
+						}
+					}*/
+					initializeMapping(obh);
+				}
+				else
+				{					
+					/*for (JDBObject b: obh.getPackets())
+					{
+						build.append(b.getValue()+"\t");
+					}
+					build.append("\n");*/
+					//long st = System.currentTimeMillis();
+					Object objr = buildObject(obh);
+					objects.add(objr);					
+					//System.out.println(num);
+				}
+				num++;
+			}
+			//System.out.println("Time to finish maker task ="+( System.currentTimeMillis() -st));
+			return objects;
+		}		
+	}
+	
+	private static List execute(String query,SocketChannel sock,boolean nores, JdbNewDR reader) throws Exception
+	{	
+		reader.reset4();
+		List objects = new LinkedList();
+		JDBObject quer = buildQuery(query,null);
+		//System.out.println("time reqd for 1 init = "+(System.currentTimeMillis()-stt));
+		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		//System.out.println("time reqd for init = "+(System.currentTimeMillis()-stt));
+		ByteBuffer buf = ByteBuffer.allocate(data.length);
+		buf.put(data);
+		buf.flip();
+		int num = 0;
+		//StringBuilder build = new StringBuilder();
+		JDBObject tabDet = null;
+		long rdtim = 0,odtim = 0;
+		try
+		{
+			
+			//System.out.println("Time to dispatch = "+(System.currentTimeMillis()-st));
+			
+			sock.write(buf);			
+			JdbAMEFObjMaker maker = new JdbAMEFObjMaker();
+			JdbAMEFReader amefRead = new JdbAMEFReader(reader,sock,maker);
+			
+			FutureTask amefReadTask = new FutureTask(amefRead);
+			FutureTask<List> makerTask = new FutureTask<List>(maker);
+			//long st = System.currentTimeMillis();
+			execs.execute(amefReadTask);
+			
+			execs.execute(makerTask);
+			//st = System.currentTimeMillis();
+			amefReadTask.get();
+			//System.out.println("Time to actual read = "+(System.currentTimeMillis()-st));
+			//st = System.currentTimeMillis();
+			objects = makerTask.get();
+			//System.out.println("Time to actual make = "+(System.currentTimeMillis()-st));
+			execs.shutdown();
+			
+			/*StringBuilder build = new StringBuilder();
+			System.out.println("time reqd for sending query = "+(System.currentTimeMillis()-stt));
+			long sttim = System.currentTimeMillis();
+			if(nores)
+			{							
+				outer : while(!reader.isReaderDone())
+				{
+					long rdst = System.currentTimeMillis();
+					while(!reader.isDone())
+					{
+						data = reader.read(sock,1);
+						if(reader.isReaderDone())
+							break outer;
+					}
+					reader.reset();
+					long rdent = System.currentTimeMillis();
+					rdtim += (rdent-rdst);
+					num++;
+					long ost = System.currentTimeMillis();
+					JDBObject obh = JdbResources.getDecoder().decode(data, false, false);
+					if(obh.getName().equals(""))
+					{					
+						for (JDBObject b: obh.getPackets())
+						{
+							build.append(b.getValue()+"\t");
+						}
+						build.append("\n");
+						//long st = System.currentTimeMillis();
+						Object objr = buildObject(obh);
+						objects.add(objr);
+						//if(num==3)System.out.println("time reqd for one object rep = "+(System.currentTimeMillis()-st));
+					}
+					else if(obh.getName().equals("TABLE_COLUMN_DET"))
+					{
+						if(tabDet==null)
+						{
+							tabDet = obh;	
+							for (JDBObject b: tabDet.getPackets())
+							{
+								build.append(b.getName()+"\t");
+							}
+							build.append("\n");
+							initializeMapping(tabDet);
+						}
+					}
+					else if(obh.getName().equals("TABLE_CLASS_MAP"))
+					{
+						if(mapping==null)
+						{
+							JDBObject tabDet1 = obh;
+							mapping = new HashMap<String, String>();
+							for (JDBObject b: tabDet1.getPackets())
+							{
+								mapping.put(b.getName(),b.getValue());
+							}
+						}
+					}
+					long oend = System.currentTimeMillis();
+					odtim += oend - ost;
+					System.out.println(num);
+				}
+			}*/
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("time reqd for comlpetion = "+(System.currentTimeMillis()-stt)
+				+"\nSize of objects = "+(objects.size())
+				+"\nTime to read = "+(rdtim)
+				+"\nTime to object = "+(odtim));
+		//System.out.println(build.toString()+"\nSize of objects = "+(num-1));
+		return objects;
+	}
+	private static Object buildObject(JDBObject obh)
+	{
+		Object instance = null;
+		String claz = mappik.get("class");
+		try
+		{
+			Class clas = Class.forName(claz);
+			instance = clas.newInstance();
+			for (Iterator<Map.Entry<String,String>> iter = mappik.entrySet().iterator(); iter.hasNext();)
+			{
+				Map.Entry<String,String> entry = iter.next();
+				if(!entry.getKey().equals("class"))
+				{
+					Field f = clas.getDeclaredField(entry.getValue());
+					if(f.getType().toString().equals("class java.lang.String") && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, new String(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
+					}
+					else if((f.getType().toString().equals("int") || f.getType().toString().equals("class java.lang.Integer"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, JdbResources.byteArrayToInt(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
+					}
+					else if((f.getType().toString().equals("long") || f.getType().toString().equals("class java.lang.Long"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, JdbResources.byteArrayToLong(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
+					}
+					else if((f.getType().toString().equals("double") || f.getType().toString().equals("class java.lang.Double"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, Double.parseDouble(new String(obh.getPackets().get(mappi.get(entry.getKey())).getValue())));
+					}
+					else if((f.getType().toString().equals("float") || f.getType().toString().equals("class java.lang.Float"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, Float.parseFloat(new String(obh.getPackets().get(mappi.get(entry.getKey())).getValue())));
+					}
+					else if((f.getType().toString().equals("char") || f.getType().toString().equals("class java.lang.Character"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						f.set(instance, (char)obh.getPackets().get(mappi.get(entry.getKey())).getValue()[0]);
+					}
+					else if((f.getType().toString().equals("boolean") || f.getType().toString().equals("class java.lang.Boolean"))
+							 && mappi.get(entry.getKey())!=null)
+					{
+						boolean flag = (obh.getPackets().get(mappi.get(entry.getKey())).getValue()[0]=='1')?true:false;
+						f.set(instance, flag);
+					}
+				}
+			}			
+		}
+		catch (ClassNotFoundException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (SecurityException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (NoSuchFieldException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IllegalArgumentException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IllegalAccessException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (InstantiationException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+		return instance;
+	}
+	static Map<String,Integer> mappi =  new HashMap<String, Integer>();
+	static Map<String,String> mapping = null;
+	private static void initializeMapping(JDBObject tabdet)
+	{
+		for (int i = 0; i < tabdet.getPackets().size(); i++)
+		{
+			mappi.put(tabdet.getPackets().get(i).getNameStr(), i);
+		}
+	}
+	
+	private static boolean evaluate(JDBObject tabdet,JDBObject objec)
+	{
+		if(whrandcls.size()==0)
+			return true;
+		boolean flag = true;
+		if(whrclsInd==null)
+		{
+			whrclsInd = new HashMap<String, Integer>();
+			whrclsIndv = new HashMap<Integer, String>();
+			whrclsIndt = new HashMap<Integer, String>();
+		}		
+		if(whrclsInd.size()==0)
+		{
+			for (int i = 0; i < tabdet.getPackets().size(); i++)
+			{
+				if(whrandcls.get(tabdet.getPackets().get(i).getNameStr())!=null)
+				{
+					whrclsInd.put(tabdet.getPackets().get(i).getNameStr(), i);
+					whrclsIndv.put(i, whrandcls.get(tabdet.getPackets().get(i).getNameStr()));
+					whrclsIndt.put(i, new String(tabdet.getPackets().get(i).getValue()));
+				}
+				else if(whrorcls.get(tabdet.getPackets().get(i).getNameStr())!=null)
+				{
+					whrclsInd.put(tabdet.getPackets().get(i).getNameStr(), i);
+					whrclsIndv.put(i, whrorcls.get(tabdet.getPackets().get(i).getNameStr()));
+					whrclsIndt.put(i, new String(tabdet.getPackets().get(i).getValue()));
+				}
+			}
+		}			
+		for (String name : whrandcls.keySet())
+		{
+			int num = whrclsInd.get(name);
+			flag &= eval(new String(objec.getPackets().get(num).getValue()),whrclsIndv.get(num),whrclsIndt.get(num));
+		}
+		for (String name : whrorcls.keySet())
+		{
+			int num = whrclsInd.get(name);
+			flag |= eval(new String(objec.getPackets().get(num).getValue()),whrclsIndv.get(num),whrclsIndt.get(num));
+		}
+		return flag;
+	}
+	private static boolean eval(String left,String right,String type)
+	{
+		if(type.equalsIgnoreCase("string"))
+		{
+			String chr = right.substring(0,1);
+			right = right.substring(right.indexOf(chr)+1,right.lastIndexOf(chr));
+			return left.equals(right);
+		}
+		else if(type.equalsIgnoreCase("int"))
+		{
+			return left.equals(right);
+		}
+		return false;
+	}
+	
+	private static JDBObject buildQuerys(String query,JDBObject row) throws Exception
+	{
+		JDBObject object = new JDBObject();
+		object.addPacket(query);
+		if(query.indexOf("insert ")!=-1)
+		{
+			object.addPacket(JdbResources.getEncoder().encodeB(row, false),"values");
+		}
+		return object;
+	}
+	
+	private static JDBObject buildQuery(String query,List<JDBObject> row) throws Exception
+	{
+		JDBObject object = new JDBObject();
+		object.addPacket(query);
+		if(query.indexOf("insert ")!=-1)
+		{
+			/*String columns = "",values = "";
+			String subq = query.substring(query.indexOf("(")+1,query.lastIndexOf(")"));
+			String temp = query.substring(0,query.indexOf("("));
+			String[] qparts = temp.split(" ");
+			object.addPacket("insert", "query");			
+			if(!qparts[1].equalsIgnoreCase("into"))
+			{
+				throw new Exception("");				
+			}			
+			if(!qparts[3].equalsIgnoreCase("values"))
+			{
+				if(subq.indexOf(" values")!=-1)
+				{
+					columns = subq.substring(0,subq.indexOf(")"));
+					values = subq.substring(subq.indexOf("("));					
+				}
+				else
+					throw new Exception("");				
+			}	
+			else
+				values = subq;
+			object.addPacket(columns.trim(), "columns");
+			object.addPacket(qparts[2].trim(), "table");*/
+			for (int i = 0; i < row.size(); i++)
+			{
+				object.addPacket(JdbResources.getEncoder().encodeB(row.get(i), false),"values");
+			}			
+		}
+		/*else if(query.indexOf("select ")!=-1)
+		{
+			String subq = query.indexOf(" where ")!=-1?query.substring(query.indexOf(" where ")+7):"";
+			String[] qparts = query.split(" ");
+			object.addPacket("select", "query");
+			object.addPacket(qparts[1].trim(), "columns");
+			if(!qparts[2].equalsIgnoreCase("from"))
+			{
+				throw new Exception("");				
+			}
+			object.addPacket(qparts[3].trim(), "table");
+			object.addPacket(subq, "wtype");
+			object.addPacket("", "values");
+		}*/
+		return object;
+	}
+
+}
