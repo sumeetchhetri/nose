@@ -98,4 +98,52 @@ public class JdbSearcher implements Runnable
 		q.add("DONE");
 		//return rec;
 	}
+	
+	public Object call()
+	{
+		Object rec = 0;
+		InputStream jdbin = null;				
+		try
+		{
+			//long st2 = System.currentTimeMillis();		
+			if(isMemoryDB)
+			{
+				//JdbMemoryStore.getJdbMemoryStore();
+				//JdbMemoryStore.getJdbMemoryStore().selectFromStore(q,table,index);
+				jdbin = new FileInputStream(new File(table.getFileName(index)));
+				if(distinct)
+					rec = table.getAMEFObjectsDo(q,jdbin,subq,objtab,qparts,one,aggr,grpbycol);
+				else
+					rec = table.getAMEFObjectso(q,jdbin,subq,objtab,qparts,one,aggr,grpbycol);
+			}
+			else
+			{
+				jdbin = new FileInputStream(new File(table.getFileName(index)));
+				rec = table.getAMEFObjectsb(q,jdbin,subq,objtab,qparts);	
+			}
+			//System.out.println("time reqd for search = "+(System.currentTimeMillis()-st2));
+		}
+		catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if(jdbin!=null)
+					jdbin.close();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		//q.add("DONE");
+		return rec;
+	}
 }

@@ -88,7 +88,7 @@ public class Test
 		String[] misc = null;
 		String[] colTypesNames =  new String[]{"id|int","name|string","date1|string","flag|boolean","ind|char"};
 		Map<String,String> mappi = new HashMap<String,String>();
-		mappi.put("PK", "id");
+		//mappi.put("PK", "id");
 		//mappi.put("id", "id");
 		//mappi.put("name", "name");
 		
@@ -207,7 +207,7 @@ public class Test
 			objects1.add(object);
 		}
 		
-		//con.bulkInsert("temp", "temp1",objects1);
+		con.bulkInsert("temp", "temp1",objects1);
 		System.out.println("Time for Indexed Inserts = "+(System.currentTimeMillis()-sti));
 		
 		sti = System.currentTimeMillis();
@@ -229,7 +229,7 @@ public class Test
 		object.addPacket(true);
 		object.addPacket('Y');
 		objects1.add(object);
-		//con.bulkInsert("temp", "temp2",objects1);
+		con.bulkInsert("temp", "temp2",objects1);
 		System.out.println("Time for Non-indexed Inserts = "+(System.currentTimeMillis()-sti));
 		
 		sti = System.currentTimeMillis();
@@ -251,7 +251,7 @@ public class Test
 		object.addPacket(true);
 		object.addPacket('Y');
 		objects1.add(object);
-		//con.bulkInsert("temp", "temp3",objects1);
+		con.bulkInsert("temp", "temp3",objects1);
 		System.out.println("Time for Non-indexed Inserts = "+(System.currentTimeMillis()-sti));
 		objects1 = null;
 		/*object = new JDBObject();
@@ -290,21 +290,21 @@ public class Test
 		//Thread.sleep(10000);
 		DBManager.getDBManager();
 		Queue<Object> q = new ConcurrentLinkedQueue<Object>();
-		/*long st = System.currentTimeMillis();
-		con.selectAMEFObjectsb("temp", "temp1", new String[]{"*"}, q , "", false);
+		long st = System.currentTimeMillis();
+		con.selectAMEFObjectsbq("temp", "temp1", new String[]{"*"}, q , "", false);
 		long st1 = System.currentTimeMillis();
 		System.out.println("\nTime required to fetch indexed data = "+(st1-st)+" "+(q.size()-3));
 				
 		q = new ConcurrentLinkedQueue<Object>();
 		st = System.currentTimeMillis();
-		con.selectAMEFObjectsb("temp", "temp2", new String[]{"*"}, q , "", false);
+		con.selectAMEFObjectsbq("temp", "temp2", new String[]{"*"}, q , "", false);
 		st1 = System.currentTimeMillis();
-		System.out.println("Time required to fetch non-indexed data = "+(st1-st)+" "+(q.size()-3));*/
+		System.out.println("Time required to fetch non-indexed data = "+(st1-st)+" "+(q.size()-3));
 				
-		/*q = new ConcurrentLinkedQueue<Object>();		
-		long st = System.currentTimeMillis();
+		q = new ConcurrentLinkedQueue<Object>();		
+		st = System.currentTimeMillis();
 		con.selectQuery(q,"select * from temp1,temp2 group by temp1.name,temp2.id");
-		long st1 = System.currentTimeMillis();
+		st1 = System.currentTimeMillis();
 		System.out.println("Time required to fetch distinct data for temp1 = "+(st1-st)+" "+(q.size()));
 				
 		q = new ConcurrentLinkedQueue<Object>();
@@ -383,7 +383,7 @@ public class Test
 		st = System.currentTimeMillis();
 		con.selectQuery(q,"select * from temp1,temp2,temp3 order by temp1.id,temp2.ind asc");
 		long st3 = System.currentTimeMillis();
-		System.out.println("Time required to fetch right joined filtered aliased column joined data = "+(st3-st)+" "+(q.size()));*/
+		System.out.println("Time required to fetch right joined filtered aliased column joined data = "+(st3-st)+" "+(q.size()));
 				
 		q = new ConcurrentLinkedQueue<Object>();
 		long st5 = System.currentTimeMillis();
