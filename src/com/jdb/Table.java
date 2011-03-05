@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -895,7 +896,9 @@ public class Table implements Serializable
 		{
 			byte[] type = new byte[1];	
 			if(!pksrch)
-			{						
+			{	
+				ByteBuffer b = ByteBuffer.allocate(102400);
+				int cuurcnt = 0;
 				if(jdbin.available()>4)
 				{
 					boolean done = false,last = false;
@@ -952,7 +955,7 @@ public class Table implements Serializable
 						if(obh==null)continue;
 						if(qparts==null || qparts.length==0 || qparts[0].equals("*"))
 						{
-							q.add(buf.array());	
+							q.add(buf.array());
 						}
 						else
 						{
@@ -962,11 +965,275 @@ public class Table implements Serializable
 								createRow(qparts[i], obh1, obh, valInd, true);
 							}
 							if(!last)
+							{
 								q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+							}
 						}
 					}
 					if(last && lastobh!=null)
-						q.add(JdbResources.getEncoder().encodeWL(lastobh,true));
+					{
+						q.add(JdbResources.getEncoder().encodeWL(lastobh,true));						
+					}
+					return rec;
+				}
+			}
+			else
+			{
+				long id = Long.parseLong(whrandcls.get(mapping.get("PK")).value);
+				long tr = getIndex(id);
+				if(tr==-1)
+					return 0;
+				jdbin.skip(tr);
+				jdbin.read(type);
+				int lengthm = 0;
+				byte[] le = null;
+				if(type[0]==(byte)'m')
+				{
+					le = new byte[1];
+					jdbin.read(le);
+					lengthm = JdbResources.byteArrayToInt(le);
+				}
+				else if(type[0]=='q')
+				{
+					le = new byte[2];
+					jdbin.read(le);
+					lengthm = JdbResources.byteArrayToInt(le);
+				}
+				else if(type[0]=='p')
+				{
+					le = new byte[3];
+					jdbin.read(le);
+					lengthm = JdbResources.byteArrayToInt(le);
+				}
+				else
+				{
+					le = new byte[4];
+					jdbin.read(le);
+					lengthm = JdbResources.byteArrayToInt(le);
+				}
+				ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
+				byte[] data = new byte[lengthm];
+				jdbin.read(data);
+				buf.put(type);
+				buf.put(le);
+				buf.put(data);
+				buf.flip();
+				buf.clear();
+				JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+				if(whrandcls.size()!=0 || whrorcls.size()!=0)
+				{						
+					if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
+					{
+						obh = null;
+					}
+				}
+				if(qparts==null || qparts.length==0 || qparts[0].equals("*"))
+				{
+					q.add(buf.array());	
+				}
+				else
+				{
+					JDBObject obh1 = new JDBObject();
+					for (int i = 0; i < qparts.length; i++)
+					{	
+						createRow(qparts[i], obh1, obh, valInd, true);
+					}
+					q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+				}
+			}
+			return rec;
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			return rec;
+		}
+		catch (AMEFDecodeException e)
+		{
+			e.printStackTrace();
+			return rec;
+		}
+	}
+	
+	
+	protected int getAMEFObjectsbc(Queue<Object> q,InputStream jdbin, String subq, JDBObject objtab, String[] qparts,SocketChannel channel) throws Exception
+	{
+		int rec = 0;
+		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
+		Map<String,Opval> whrorcls = new HashMap<String, Opval>();;
+		Map<String,Integer> whrclsInd = new HashMap<String, Integer>();
+		Map<String,Integer> valInd = new HashMap<String, Integer>();
+		Map<Integer,String> whrclsIndv = new HashMap<Integer, String>();
+		Map<Integer,String> whrclsIndt = new HashMap<Integer, String>();
+		if(subq!=null && !subq.equals(""))
+		{
+			while(subq.indexOf(" and ")!=-1 || subq.indexOf(" or ")!=-1)
+			{
+				int anop = subq.indexOf(" and ");
+				int orop = subq.indexOf(" or ");
+				if((anop<orop && anop!=-1) || (anop!=-1 && orop==-1))
+				{
+					String ter = subq.split(" and ")[0].trim();					
+					getOperator(ter,whrandcls);
+					subq = subq.substring(anop+5);
+				}
+				else if(orop!=-1)
+				{
+					String ter = subq.split(" or ")[0].trim();
+					getOperator(ter,whrorcls);
+					subq = subq.substring(orop+4);
+				}
+			}		
+			getOperator(subq,whrandcls);
+		}
+		for (int i = 0; i < objtab.getPackets().size(); i++)
+		{
+			if(whrandcls.get(objtab.getPackets().get(i).getNameStr())!=null)
+			{
+				whrclsInd.put(objtab.getPackets().get(i).getNameStr(), i);
+				whrclsIndv.put(i, whrandcls.get(objtab.getPackets().get(i).getNameStr()).value);
+				whrclsIndt.put(i, new String(objtab.getPackets().get(i).getValue()));
+			}
+			else if(whrorcls.get(objtab.getPackets().get(i).getNameStr())!=null)
+			{
+				whrclsInd.put(objtab.getPackets().get(i).getNameStr(), i);
+				whrclsIndv.put(i, whrorcls.get(objtab.getPackets().get(i).getNameStr()).value);
+				whrclsIndt.put(i, new String(objtab.getPackets().get(i).getValue()));
+			}
+			valInd.put(objtab.getPackets().get(i).getNameStr(),i);
+		}
+		boolean pksrch = false;
+		if(whrandcls.get(mapping.get("PK"))!=null)
+		{
+			pksrch = true;
+		}
+		try
+		{
+			byte[] type = new byte[1];	
+			if(!pksrch)
+			{	
+				ByteBuffer b = ByteBuffer.allocate(64*1024);
+				if(jdbin.available()>4)
+				{
+					boolean done = false,last = false;
+					JDBObject lastobh = new JDBObject();
+					while(jdbin.available()>4 && !done)
+					{	
+						rec++;
+						jdbin.read(type);
+						int lengthm = 0;
+						byte[] le = null;
+						if(type[0]==(byte)'m')
+						{
+							le = new byte[1];
+							jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(le);
+						}
+						else if(type[0]=='q')
+						{
+							le = new byte[2];
+							jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(le);
+						}
+						else if(type[0]=='p')
+						{
+							le = new byte[3];
+							jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(le);
+						}
+						else
+						{
+							le = new byte[4];
+							jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(le);
+						}
+						Thread.sleep(0, 1);
+						ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
+						byte[] data = new byte[lengthm];
+						jdbin.read(data);
+						buf.put(type);
+						buf.put(le);
+						buf.put(data);
+						buf.flip();
+						buf.clear();
+						JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+						if(whrandcls.size()!=0 || whrorcls.size()!=0)
+						{						
+							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
+							{
+								//q.add(buf.array());
+								obh = null;
+							}
+						}
+						//else
+						//	q.add(buf.array());
+						if(obh==null)continue;
+						if(qparts==null || qparts.length==0 || qparts[0].equals("*"))
+						{
+							//q.add(buf.array());
+							byte[] encData = buf.array();
+							if(b.limit()+encData.length<b.capacity())
+								b.put(encData);
+							else
+							{
+								b.flip();
+								ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length);
+								b1.put(b.array(),0,b.limit());
+								
+								b1.put(encData);
+								b1.flip();
+								
+								channel.write(b1);
+								b.clear();
+							}
+						}
+						else
+						{
+							JDBObject obh1 = new JDBObject();
+							for (int i = 0; i < qparts.length; i++)
+							{									
+								createRow(qparts[i], obh1, obh, valInd, true);
+							}
+							if(!last)
+							{
+								//q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+								byte[] encData = JdbResources.getEncoder().encodeWL(obh1,true);
+								if(b.limit()+encData.length<b.capacity())
+									b.put(encData);
+								else
+								{
+									b.flip();
+									ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length);
+									b1.put(b.array(),0,b.limit());
+									
+									b1.put(encData);
+									b1.flip();
+									
+									channel.write(b1);
+									b.clear();
+								}
+							}
+						}
+					}
+					if(last && lastobh!=null)
+					{
+						//q.add(JdbResources.getEncoder().encodeWL(lastobh,true));
+						byte[] encData = JdbResources.getEncoder().encodeWL(lastobh,true);
+						if(b.limit()+encData.length<b.capacity())
+							b.put(encData);
+						else
+						{
+							b.flip();
+							ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length);
+							b1.put(b.array(),0,b.limit());
+							
+							b1.put(encData);
+							b1.flip();
+							
+							channel.write(b1);
+							b.clear();
+						}
+					}
 					return rec;
 				}
 			}

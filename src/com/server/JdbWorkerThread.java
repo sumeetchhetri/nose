@@ -94,17 +94,19 @@ public class JdbWorkerThread implements Runnable
 						System.out.println("time reqd to read query = "+(System.currentTimeMillis()-st));
 						st = System.currentTimeMillis();
 						con.selectAMEFObjectsb("temp", tablen.trim(), qparts, q, subq, false);
-						System.out.println("time reqd to return from select = "+(System.currentTimeMillis()-st));
+						//System.out.println("time reqd to return from select = "+(System.currentTimeMillis()-st));
 						//st = System.currentTimeMillis();
 						Object obj = null;
 						long pend = 0,cnt = 0;
 						long sentpacks = 0;
 						long spetw = 0;
-						while(pend<10000)
+						ByteBuffer b = ByteBuffer.allocate(64*1024);
+						int count = 0;
+						while(pend<100000)
 						{
 							while((obj=q.poll())==null)
 							{
-								Thread.sleep(0,100);
+								Thread.sleep(1);
 								pend+= 1;
 								spetw+=1;
 							}
@@ -114,30 +116,65 @@ public class JdbWorkerThread implements Runnable
 								if(obj instanceof byte[])
 								{
 									byte[] encData = (byte[])obj;									
-									ByteBuffer buf = ByteBuffer.allocate(encData.length);
+									/*ByteBuffer buf = ByteBuffer.allocate(encData.length);
 									sentpacks += encData.length;
 									buf.put(encData);
 									buf.flip();
 									channel.write(buf);
-									buf.clear();
+									buf.clear();*/
+									if(b.position()+encData.length<b.capacity())
+									{
+										b.put(encData);
+										count += encData.length;
+									}
+									else
+									{
+										b.flip();
+										ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length+4);
+										b1.put(JdbResources.intToByteArray(b.limit()+encData.length, 4));
+										
+										//ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length);
+										
+										b1.put(b.array(),0,b.limit());
+										
+										b1.put(encData);
+										b1.flip();
+										
+										channel.write(b1);
+										b.clear();
+										count = 0;
+									}
 									//System.out.println(cnt++);
 								}
 								else if(obj instanceof String)
 									break;
 								if(sentpacks>9999999)
 								{
-									Thread.sleep(100);
+									Thread.sleep(0,100);
 									sentpacks = 0;
 								}
 							}
 						}
-						byte[] encData = {'F'};
-						ByteBuffer buf = ByteBuffer.allocate(1);
+						if(b.position()>0)
+						{
+							//ByteBuffer buf = ByteBuffer.allocate(b.position());
+							
+							ByteBuffer buf = ByteBuffer.allocate(b.position()+4);
+							buf.put(JdbResources.intToByteArray(b.position(), 4));
+							
+							
+							buf.put(b.array(),0,b.position());
+							buf.flip();
+							channel.write(buf);
+							buf.clear();
+						}
+						byte[] encData = {'F','F','F','F'};
+						ByteBuffer buf = ByteBuffer.allocate(4);
 						buf.put(encData);
 						buf.flip();
 						channel.write(buf);	
 						buf.clear();
-						System.out.println("Time wasted sleeping = "+spetw);
+						//System.out.println("Time wasted sleeping = "+spetw*0.000001);
 						System.out.println("time reqd to complete select = "+(System.currentTimeMillis()-st)+" Count = "+cnt);					
 					}
 					else if(quer.equalsIgnoreCase("start transaction"))
@@ -204,7 +241,7 @@ public class JdbWorkerThread implements Runnable
 						//con.refresh();
 					}
 					reader.reset();
-					while((data = reader.read(channel,3))==null){}
+					while((data = reader.read(channel,3))==null){Thread.sleep(1);}
 				}
 				catch (InterruptedException e)
 				{
@@ -217,7 +254,8 @@ public class JdbWorkerThread implements Runnable
 				catch (Exception e)
 				{
 					e.printStackTrace();
-				}			
+				}
+				Thread.sleep(1);
 			}while(!JdbServer.receivedShutDownRequest());
 		}
 		catch (Exception e)

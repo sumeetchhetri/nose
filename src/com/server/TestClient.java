@@ -419,6 +419,42 @@ public class TestClient
 					+"\nTime to object = "+(odtim));
 			return objects;
 		}
+		
+		public List selectf() throws Exception
+		{
+			List objects = new LinkedList();
+			JDBObject query = new JDBObject();
+			query.addPacket("select * from temp1");
+			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			ByteBuffer buf = ByteBuffer.allocate(data.length);
+			buf.put(data);
+			buf.flip();
+			long rdtim = 0,odtim = 0;
+			try
+			{
+				sock.write(buf);			
+				JdbAMEFObjMakef maker = new JdbAMEFObjMakef();
+				JdbAMEFReaderf amefRead = new JdbAMEFReaderf(new JdbDataReader(),sock,maker);
+				new Thread(amefRead).start();
+				objects = (List)maker.call();
+				//FutureTask amefReadTask = new FutureTask(amefRead);
+				//FutureTask<List> makerTask = new FutureTask<List>(maker);
+				//execs.execute(amefReadTask);
+				//execs.execute(makerTask);
+				//amefReadTask.get();
+				//objects = makerTask.get();
+				//execs.shutdown();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			System.out.println("time reqd for comlpetion = "+(System.currentTimeMillis()-stt)
+					+"\nSize of objects = "+(objects.size())
+					+"\nTime to read = "+(rdtim)
+					+"\nTime to object = "+(odtim));
+			return objects;
+		}
 	}
 	
 	static class DMLResReader implements Callable
@@ -529,7 +565,7 @@ public class TestClient
 			//System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
 			System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
 			st = System.currentTimeMillis();
-			System.out.println("Time for select "+session.select().size()+" = "+(System.currentTimeMillis()-st));
+			System.out.println("Time for select "+session.selectf().size()+" = "+(System.currentTimeMillis()-st));
 			/*long st1 = System.currentTimeMillis();stt=st1;
 			String query1 = "select * from temp1";
 			List<JDBObject> data = execute(query1,sock,true,reader);	
@@ -912,6 +948,7 @@ public class TestClient
 				maker.addToQ(data);
 				i++;
 			}
+			i=0;
 			reader.reset1();
 			outer : while(!reader.isReaderDone())
 			{
@@ -919,12 +956,14 @@ public class TestClient
 				while(!reader.isDone())
 				{					
 					data = reader.readLim1(sock,1);
-					//Thread.sleep(1);
+					//Thread.sleep(0,1);
 					if(reader.isReaderDone())
 						break outer;
 				}
 				reader.reset1();
 				maker.addToQ(data);
+				
+				//System.out.println(i++);
 			}
 			/*JDBObject amef = new JDBObject();
 			amef.setName("DONE");
@@ -932,10 +971,155 @@ public class TestClient
 			String dat = JdbResources.getEncoder().encodeS(amef, false);
 			dat = dat.substring(4);*/
 			maker.addToQ(new byte[]{'F'});
-			//System.out.println("Time to finish reader task ="+( System.currentTimeMillis() -st));
+			System.out.println("Time to finish reader task ="+( System.currentTimeMillis() -st));
 			return null;
 		}
 	}
+	
+	
+	static class JdbAMEFReaderf implements Runnable
+	{
+		JdbDataReader reader;
+		SocketChannel sock;
+		JdbAMEFObjMakef maker;
+		public JdbAMEFReaderf(JdbDataReader reader, SocketChannel sock,
+				JdbAMEFObjMakef maker)
+		{
+			super();
+			this.reader = reader;
+			this.sock = sock;
+			this.maker = maker;
+		}
+
+		public void run()
+		{	
+			long st = System.currentTimeMillis();
+			try{			
+			reader.reset();
+			
+			outer : while(!reader.isReaderDone())
+			{
+				byte[] data = null;
+				while(!reader.isDone())
+				{					
+					data = reader.read(sock,1);
+					
+					if(reader.isReaderDone())
+						break outer;
+				}
+				reader.reset();
+				maker.addToQ(data);
+				Thread.sleep(0,1);
+			}
+			}catch(Exception e){}
+			maker.addToQ(new byte[]{'F'});
+			System.out.println("Time to finish reader task ="+( System.currentTimeMillis() -st));
+			//return null;
+		}
+	}
+	static class JdbAMEFObjMakef implements Callable
+	{
+		private ConcurrentLinkedQueue<byte[]> q;
+		private List objects = null;
+		public boolean done = false;
+		public JdbAMEFObjMakef()
+		{
+			q = new ConcurrentLinkedQueue<byte[]>();
+			objects = new ArrayList();
+		}
+		public void addToQ(byte[] data)
+		{
+			q.add(data);
+		}
+		public Object call() throws Exception
+		{
+			long st = System.currentTimeMillis();
+			byte[] data = null;
+			JDBObject tabDet = null;
+			int num = 0;
+			String claz = mappik.get("class");
+			Class clas = null;
+			try
+			{
+				clas = Class.forName(claz);
+			}
+			catch(Exception e){}
+			outer : while(true)
+			{
+				while((data=q.poll())==null)
+				{
+					Thread.sleep(0,1);
+				}
+				int cnter = 0;
+				while(cnter<data.length)
+				{
+					int lengthm = 0;					
+					if(num<=1)
+					{
+						lengthm = JdbResources.byteArrayToInt(data, cnter, 4);
+						cnter += 4;
+					}
+					else if(data[cnter]=='m')
+					{
+						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 1) + 2;
+					}
+					else if(data[cnter]=='q')
+					{
+						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 2) + 3;
+					}
+					else if(data[cnter]=='p')
+					{
+						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 3) + 4;
+					}
+					else if(data[cnter]=='o')
+					{
+						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 4) + 5;
+					}
+					else if(data[cnter]=='F')
+					{
+						break outer;
+					}
+					
+					byte[] interdata = new byte[lengthm];
+					System.arraycopy(data, cnter, interdata, 0, lengthm);
+					cnter+=(lengthm);
+					
+					JDBObject obh = null;
+					if(num<=1)
+					{
+						obh = JdbResources.getDecoder().decodeB(interdata, false, false);						
+					}
+					else
+					{
+						obh = JdbResources.getDecoder().decodeB(interdata, false, true);
+					}
+					
+					if(num==0)
+					{					
+						if(tabDet==null)
+						{
+							tabDet = obh;
+						}
+					}
+					else if(num==1)
+					{
+						initializeMapping(obh);
+					}
+					else
+					{					
+						Object objr = buildObject(obh,clas);
+						objects.add(objr);
+						//objects.add(obh);
+					}
+					num++;
+					if(num%1000==0)
+					Thread.sleep(0,1);
+				}				
+			}
+			return objects;
+		}		
+	}
+	
 	
 	static class JdbAMEFObjMaker implements Callable
 	{
@@ -957,11 +1141,18 @@ public class TestClient
 			byte[] data = null;
 			JDBObject tabDet = null;
 			int num = 0;
+			String claz = mappik.get("class");
+			Class clas = null;
+			try
+			{
+				clas = Class.forName(claz);
+			}
+			catch(Exception e){}
 			outer : while(true)
 			{
 				while((data=q.poll())==null)
 				{
-					Thread.sleep(0,100);
+					Thread.sleep(0,1);
 				}
 				JDBObject obh = null;
 				if(num<=1)
@@ -1004,7 +1195,7 @@ public class TestClient
 					}
 					build.append("\n");*/
 					//long st = System.currentTimeMillis();
-					Object objr = buildObject(obh);
+					Object objr = buildObject(obh,clas);
 					objects.add(objr);					
 					//System.out.println(num);
 				}
@@ -1128,13 +1319,13 @@ public class TestClient
 		//System.out.println(build.toString()+"\nSize of objects = "+(num-1));
 		return objects;
 	}
-	private static Object buildObject(JDBObject obh)
+	private static Object buildObject(JDBObject obh,Class clas)
 	{
 		Object instance = null;
-		String claz = mappik.get("class");
+		//String claz = mappik.get("class");
 		try
 		{
-			Class clas = Class.forName(claz);
+			//Class clas = Class.forName(claz);
 			instance = clas.newInstance();
 			for (Iterator<Map.Entry<String,String>> iter = mappik.entrySet().iterator(); iter.hasNext();)
 			{
@@ -1180,11 +1371,11 @@ public class TestClient
 				}
 			}			
 		}
-		catch (ClassNotFoundException e)
+		/*catch (ClassNotFoundException e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		catch (SecurityException e)
 		{
 			// TODO Auto-generated catch block
