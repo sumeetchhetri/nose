@@ -12,7 +12,7 @@ public class JdbNewDR
 		setReaderDone(false);
 		setReadStart(false);
 	}
-	private ByteBuffer buf = ByteBuffer.allocate(32000);
+	private ByteBuffer buf = ByteBuffer.allocate(64*1024);
 	private boolean done = false;
 	private boolean readerDone;
 	private boolean readStart = false;

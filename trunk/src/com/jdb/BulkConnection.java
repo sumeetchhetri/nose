@@ -1,5 +1,8 @@
 package com.jdb;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -4853,15 +4856,17 @@ public class BulkConnection
 		for (int i = 0; i < table.getAlgo(); i++)
 		{			
 			JdbSearcher searcher = new JdbSearcher(subq, q, table, i, objtab, false, qparts, distinct, false, false, "");
-			FutureTask future = new FutureTask<Object>(searcher);
-			workerThreadPool.execute(future);
-			futures[i] = future;
+			//FutureTask future = new FutureTask<Object>(searcher);
+			//workerThreadPool.execute(future);
+			//futures[i] = future;
+			new Thread(searcher).start();
 		}
 		for (int i = 0; i < table.getAlgo(); i++)
 		{
 			try
 			{
-				int rec = (Integer)futures[i].get();
+				//futures[i].;
+				//int rec = (Integer)futures[i].get();
 				//System.out.println("Number of records in file = "+rec);
 			}
 			catch (Exception e)
@@ -4870,8 +4875,8 @@ public class BulkConnection
 				e.printStackTrace();
 			}
 		}
-		q.add("DONE");
-		workerThreadPool.shutdown();
+		
+		//workerThreadPool.shutdown();
 		//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));
 	}
 	
@@ -4886,16 +4891,16 @@ public class BulkConnection
 		for (int i = 0; i < table.getAlgo(); i++)
 		{			
 			JdbSearcher searcher = new JdbSearcher(subq, q, table, i, objtab, true, qparts, false, one, aggr, grpbycol);
-			FutureTask future = new FutureTask<Object>(searcher);
-			workerThreadPool.execute(future);
-			futures[i] = future;
+			//FutureTask future = new FutureTask<Object>(searcher);
+			//workerThreadPool.execute(future);
+			//futures[i] = future;
 		}
 		List<JDBObject> rec = null;
 		for (int i = 0; i < table.getAlgo(); i++)
 		{
 			try
 			{
-				rec = (List<JDBObject>)futures[i].get();
+				//rec = (List<JDBObject>)futures[i].get();
 				//System.out.println("Number of records in file = "+rec);
 			}
 			catch (Exception e)
@@ -4919,16 +4924,16 @@ public class BulkConnection
 		for (int i = 0; i < table.getAlgo(); i++)
 		{			
 			JdbSearcher searcher = new JdbSearcher(subq, q, table, i, objtab, true, qparts, true, one, aggr, grpbycol);
-			FutureTask future = new FutureTask<Object>(searcher);
-			workerThreadPool.execute(future);
-			futures[i] = future;
+			//FutureTask future = new FutureTask<Object>(searcher);
+			//workerThreadPool.execute(future);
+			//futures[i] = future;
 		}
 		Set<JDBObject> rec = null;
 		for (int i = 0; i < table.getAlgo(); i++)
 		{
 			try
 			{
-				rec = (Set<JDBObject>)futures[i].get();
+				//rec = (Set<JDBObject>)futures[i].get();
 				//System.out.println("Number of records in file = "+rec);
 			}
 			catch (Exception e)
@@ -5130,5 +5135,118 @@ public class BulkConnection
 	public void rollback()
 	{
 		
+	}
+
+
+	public void selectAMEFObjectsbc(String dbname, String tableName,
+			String[] qparts, Queue<Object> q, String subq, boolean distinct,
+			SocketChannel channel) 
+	{
+			Table table = DBManager.getTable(dbname, tableName);
+	
+			JDBObject objtab = new JDBObject();
+			JDBObject objtab1 = new JDBObject();
+			
+			for (int i = 0; i < table.getColumnNames().length; i++)
+			{
+				objtab.addPacket(table.getColumnTypes()[i],table.getColumnNames()[i]);
+				if(qparts!=null && qparts[0].equals("*"))
+				{
+					objtab1.addPacket(i,table.getColumnNames()[i]);
+				}
+			}
+			try
+			{
+				//q.add(JdbResources.getEncoder().encodeB(objtab, false));
+				byte[] encData = JdbResources.getEncoder().encodeB(objtab, false);
+				ByteBuffer buf = ByteBuffer.allocate(encData.length);
+				buf.put(encData);
+				buf.flip();
+				try {
+					channel.write(buf);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+				buf.clear();
+				if(qparts.length>0 && objtab1.getPackets().size()==0)
+				{
+					for (int i = 0; i < qparts.length; i++)
+					{
+						objtab1.addPacket(i,qparts[i]);
+					}
+				}
+				//q.add(JdbResources.getEncoder().encodeB(objtab1, false));
+				encData = JdbResources.getEncoder().encodeB(objtab, false);
+				buf = ByteBuffer.allocate(encData.length);
+				buf.put(encData);
+				buf.flip();
+				try {
+					channel.write(buf);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+				buf.clear();
+				if(table.getRecords()==0)
+				{
+					//q.add("DONE");
+					encData = new byte[]{'F'};
+					buf = ByteBuffer.allocate(1);
+					buf.put(encData);
+					buf.flip();
+					try {
+						channel.write(buf);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}	
+					buf.clear();
+					return;
+				}
+			}
+			catch (AMEFEncodeException e)
+			{
+				e.printStackTrace();
+			}
+			long st1 = System.currentTimeMillis();
+			/*workerThreadPool = Executors.newScheduledThreadPool(table.getAlgo());	
+			for (int i = 0; i < table.getAlgo(); i++)
+			{			
+				JdbSearcher searcher = new JdbSearcher(subq, q, table, i, objtab, false, qparts, distinct, false, false, "");
+				FutureTask future = new FutureTask<Object>(searcher);
+				workerThreadPool.execute(future);
+				futures[i] = future;
+			}
+			for (int i = 0; i < table.getAlgo(); i++)
+			{
+				try
+				{
+					int rec = (Integer)futures[i].get();
+					//System.out.println("Number of records in file = "+rec);
+				}
+				catch (Exception e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}*/
+			JdbSearcherc searcher = new JdbSearcherc(subq, q, table, 1, objtab, false, qparts, distinct, false, false, "",channel);
+			searcher.call();
+			
+			//q.add("DONE");
+			byte[] encData = {'F'};
+			ByteBuffer buf = ByteBuffer.allocate(1);
+			buf.put(encData);
+			buf.flip();
+			try {
+				channel.write(buf);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			buf.clear();
+			//workerThreadPool.shutdown();
+			//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));}
 	}
 }

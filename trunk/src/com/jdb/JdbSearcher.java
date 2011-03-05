@@ -9,7 +9,7 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import com.amef.JDBObject;
 
-public class JdbSearcher implements Callable
+public class JdbSearcher implements Runnable
 {
 	private String subq,grpbycol;
 	private Queue<Object> q;
@@ -36,7 +36,7 @@ public class JdbSearcher implements Callable
 		this.grpbycol = grpbycol;
 	}
 
-	public Object call()
+	public void run()
 	{
 		Object rec = 0;
 		InputStream jdbin = null;				
@@ -80,6 +80,7 @@ public class JdbSearcher implements Callable
 				e.printStackTrace();
 			}
 		}
-		return rec;
+		q.add("DONE");
+		//return rec;
 	}
 }
