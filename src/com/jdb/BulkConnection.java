@@ -2277,9 +2277,18 @@ public class BulkConnection
 						}					
 						else
 						{
-							obh.addPacket(((JDBObject)entry1.getValue().count).getPackets().get(0).getTValue());
-							mpss.put((String)entry1.getKey(),
-									entry1.getValue().getFinalValue());
+							if(entry1.getValue().count instanceof JDBObject)
+							{
+								obh.addPacket(((JDBObject)entry1.getValue().count).getPackets().get(0).getTValue());
+								mpss.put((String)entry1.getKey(),
+										((JDBObject)entry1.getValue().count).getPackets().get(0).getTValue());
+							}
+							else
+							{	
+								obh.addPacket(entry1.getValue().count);
+								mpss.put((String)entry1.getKey(),
+										entry1.getValue().getFinalValue());
+							}
 						}								
 					}
 					boolean condi = evaluateHv(obh, havcls, mpss, mpst, aggVals);
@@ -4895,6 +4904,72 @@ public class BulkConnection
 		//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));
 	}
 	
+	@SuppressWarnings("unchecked")
+	public void selectAMEFObjectsbq(String dbname,String tableName,
+			String[] qparts,Queue<Object> q, String subq, boolean distinct)
+	{
+		Table table = DBManager.getTable(dbname, tableName);
+		JDBObject objtab = new JDBObject();
+		JDBObject objtab1 = new JDBObject();
+		
+		for (int i = 0; i < table.getColumnNames().length; i++)
+		{
+			objtab.addPacket(table.getColumnTypes()[i],table.getColumnNames()[i]);
+			if(qparts!=null && qparts[0].equals("*"))
+			{
+				objtab1.addPacket(i,table.getColumnNames()[i]);
+			}
+		}
+		try
+		{
+			q.add(JdbResources.getEncoder().encodeB(objtab, false));
+			if(qparts.length>0 && objtab1.getPackets().size()==0)
+			{
+				for (int i = 0; i < qparts.length; i++)
+				{
+					objtab1.addPacket(i,qparts[i]);
+				}
+			}
+			q.add(JdbResources.getEncoder().encodeB(objtab1, false));
+			if(table.getRecords()==0)
+			{
+				q.add("DONE");
+				return;
+			}
+		}
+		catch (AMEFEncodeException e)
+		{
+			e.printStackTrace();
+		}
+		long st1 = System.currentTimeMillis();
+		workerThreadPool = Executors.newScheduledThreadPool(table.getAlgo());	
+		for (int i = 0; i < table.getAlgo(); i++)
+		{			
+			JdbSearcher searcher = new JdbSearcher(subq, q, table, i, objtab, false, qparts, distinct, false, false, "");
+			//FutureTask future = new FutureTask<Object>(searcher);
+			//workerThreadPool.execute(future);
+			//futures[i] = future;
+			//new Thread(searcher).start();
+			searcher.run();
+		}
+		for (int i = 0; i < table.getAlgo(); i++)
+		{
+			try
+			{
+				//futures[i].;
+				//int rec = (Integer)futures[i].get();
+				//System.out.println("Number of records in file = "+rec);
+			}
+			catch (Exception e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		//workerThreadPool.shutdown();
+		//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));
+	}
 	
 	@SuppressWarnings("unchecked")
 	public List<JDBObject> selectAMEFObjectso(String dbname,Table table,
@@ -4924,6 +4999,8 @@ public class BulkConnection
 				e.printStackTrace();
 			}
 		}
+		JdbSearcher searcher = new JdbSearcher(subq, q, table, 1, objtab, true, qparts, false, one, aggr, grpbycol);
+		rec = (List<JDBObject>)searcher.call();
 		workerThreadPool.shutdown();
 		//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));
 		return rec;
