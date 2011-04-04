@@ -48,12 +48,12 @@ public class JdbResources
 	
 	public static JDBEncoder getEncoder()
 	{
-		return get().encoder;
+		return new JDBEncoder();
 	}
 	
 	public static JDBDecoder getDecoder()
 	{
-		return get().decoder;
+		return new JDBDecoder();
 	}
 	
 	public static byte[] longToByteArray(long l,int ind) 

@@ -121,15 +121,15 @@ public class JdbServer
 						{	
 							try
 							{
-								byte[] data = reader.read((SocketChannel)skey.channel(),0);
+								/*byte[] data = reader.read((SocketChannel)skey.channel(),0);
 								if (data != null) 
-								{	
+								{	*/
 									skey.cancel();
 									((SocketChannel)skey.channel()).configureBlocking(true);
-									JdbWorkerThread task = new JdbWorkerThread(data,(SocketChannel)skey.channel(),reader);
+									JdbWorkerThread task = new JdbWorkerThread(null,(SocketChannel)skey.channel(),reader);
 									workerThreadPool.execute(task);
 									reader.reset();
-								}
+								/*}
 								else if(data==null && reader.isDone())
 								{
 									skey.cancel();
@@ -139,7 +139,7 @@ public class JdbServer
 									}
 									catch (IOException e1)
 									{}
-								}
+								}*/
 							}
 							catch (Exception e)
 							{

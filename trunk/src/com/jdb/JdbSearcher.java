@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import com.amef.JDBObject;
 
 public class JdbSearcher implements Runnable

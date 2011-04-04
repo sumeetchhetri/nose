@@ -33,6 +33,7 @@ class JdbDataReader implements Reader
 	}
 	private ByteBuffer buf = ByteBuffer.allocate(16000000);
 	private boolean done = false;
+	private boolean closed = false;
 	private boolean readerDone;
 	private boolean readStart = false;
 	public boolean isReadStart()
@@ -60,7 +61,7 @@ class JdbDataReader implements Reader
 		{
 			if (chan.read(buf) == -1) 
 			{
-				setDone(true);
+				closed = true;
 			} 
 			else if (buf.remaining() == 0) {
 				//read header
@@ -96,7 +97,7 @@ class JdbDataReader implements Reader
 				{
 					if (chan.read(buf) == -1)
 					{
-						setDone(true);
+						closed = true;
 					} 
 					else if (buf.remaining() == 0) 
 					{
@@ -123,7 +124,7 @@ class JdbDataReader implements Reader
 		{
 			if (chan.read(buf) == -1) 
 			{
-				setDone(true);
+				closed = true;
 			} 
 			else if (buf.remaining() == 0) 
 			{
@@ -153,5 +154,9 @@ class JdbDataReader implements Reader
 	public void setReaderDone(boolean readerDone)
 	{
 		this.readerDone = readerDone;
+	}
+	public boolean isClosed()
+	{
+		return closed;
 	}
 }

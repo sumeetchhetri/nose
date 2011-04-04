@@ -539,7 +539,7 @@ public class JDBEncoder
 		int pos = 0;
 		if(!ignoreName)
 		{
-			if(packet.getType()=='o')
+			if(packet.getType()==JDBObject.OBJECT_TYPE)
 			{
 				if(buffer.length+4<256)
 				{
@@ -561,11 +561,12 @@ public class JDBEncoder
 			pos = packet.getName().length + 2;
 			buffer[pos] = (byte)',';
 			pos ++;
-			if(packet.getType()!='n' && packet.getType()!='w' && packet.getType()!='r' 
-				&& packet.getType()!='i' && packet.getType()!='f' && packet.getType()!='x' 
-					&& packet.getType()!='e' && packet.getType()!='l' && packet.getType()!='b'
-						&& packet.getType()!='c' && packet.getType()!='a' && packet.getType()!='g'
-							&& packet.getType()!='j' && packet.getType()!='v' && packet.getType()!='z')
+			if(packet.getType()!=JDBObject.VERY_SMALL_INT_TYPE && packet.getType()!=JDBObject.SMALL_INT_TYPE && packet.getType()!=JDBObject.BIG_INT_TYPE 
+				&& packet.getType()!=JDBObject.INT_TYPE && packet.getType()!=JDBObject.VS_LONG_INT_TYPE && packet.getType()!=JDBObject.S_LONG_INT_TYPE 
+				&& packet.getType()!=JDBObject.B_LONG_INT_TYPE && packet.getType()!=JDBObject.LONG_INT_TYPE && packet.getType()!=JDBObject.BOOLEAN_TYPE
+				&& packet.getType()!=JDBObject.CHAR_TYPE && packet.getType()!=JDBObject.NULL_STRING && packet.getType()!=JDBObject.NULL_BOOL
+				&& packet.getType()!=JDBObject.NULL_CHAR && packet.getType()!=JDBObject.NULL_DATE && packet.getType()!=JDBObject.NULL_FPN
+				&& packet.getType()!=JDBObject.NULL_NUMBER)
 			{
 				byte[] lengthb = JdbResources.intToByteArrayWI(packet.getlength());
 				System.arraycopy(lengthb, 0, buffer, pos, lengthb.length);
@@ -576,11 +577,12 @@ public class JDBEncoder
 		{
 			buffer[0] = (byte)packet.getType();
 			pos++;
-			if(packet.getType()!='n' && packet.getType()!='w' && packet.getType()!='r' 
-				&& packet.getType()!='i' && packet.getType()!='f' && packet.getType()!='x' 
-					&& packet.getType()!='e' && packet.getType()!='l' && packet.getType()!='b'
-						&& packet.getType()!='c' && packet.getType()!='a' && packet.getType()!='g'
-							&& packet.getType()!='j' && packet.getType()!='v' && packet.getType()!='z')
+			if(packet.getType()!=JDBObject.VERY_SMALL_INT_TYPE && packet.getType()!=JDBObject.SMALL_INT_TYPE && packet.getType()!=JDBObject.BIG_INT_TYPE 
+					&& packet.getType()!=JDBObject.INT_TYPE && packet.getType()!=JDBObject.VS_LONG_INT_TYPE && packet.getType()!=JDBObject.S_LONG_INT_TYPE 
+					&& packet.getType()!=JDBObject.B_LONG_INT_TYPE && packet.getType()!=JDBObject.LONG_INT_TYPE && packet.getType()!=JDBObject.BOOLEAN_TYPE
+					&& packet.getType()!=JDBObject.CHAR_TYPE && packet.getType()!=JDBObject.NULL_STRING && packet.getType()!=JDBObject.NULL_BOOL
+					&& packet.getType()!=JDBObject.NULL_CHAR && packet.getType()!=JDBObject.NULL_DATE && packet.getType()!=JDBObject.NULL_FPN
+					&& packet.getType()!=JDBObject.NULL_NUMBER)
 			{
 				byte[] lengthb = JdbResources.intToByteArrayWI(packet.getlength());
 				System.arraycopy(lengthb, 0, buffer, pos, lengthb.length);
@@ -597,8 +599,9 @@ public class JDBEncoder
 			System.arraycopy(val, 0, buffer, pos, val.length);
 			pos += val.length;
 		}
-		if(packet.getPackets().size()==0 && packet.getType()!='a' && packet.getType()!='g'
-			&& packet.getType()!='j' && packet.getType()!='v' && packet.getType()!='z')
+		if(packet.getPackets().size()==0 && packet.getType()!=JDBObject.NULL_STRING && packet.getType()!=JDBObject.NULL_BOOL
+				&& packet.getType()!=JDBObject.NULL_CHAR && packet.getType()!=JDBObject.NULL_DATE && packet.getType()!=JDBObject.NULL_FPN
+				&& packet.getType()!=JDBObject.NULL_NUMBER)
 		{
 			System.arraycopy(packet.getValue(), 0, buffer, pos, packet.getValue().length);
 		}

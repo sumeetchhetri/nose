@@ -207,7 +207,7 @@ public class Test
 			objects1.add(object);
 		}
 		
-		con.bulkInsert("temp", "temp1",objects1);
+		//con.bulkInsert("temp", "temp1",objects1);
 		System.out.println("Time for Indexed Inserts = "+(System.currentTimeMillis()-sti));
 		
 		sti = System.currentTimeMillis();
@@ -229,7 +229,7 @@ public class Test
 		object.addPacket(true);
 		object.addPacket('Y');
 		objects1.add(object);
-		con.bulkInsert("temp", "temp2",objects1);
+		//con.bulkInsert("temp", "temp2",objects1);
 		System.out.println("Time for Non-indexed Inserts = "+(System.currentTimeMillis()-sti));
 		
 		sti = System.currentTimeMillis();
@@ -251,9 +251,10 @@ public class Test
 		object.addPacket(true);
 		object.addPacket('Y');
 		objects1.add(object);
-		con.bulkInsert("temp", "temp3",objects1);
+		//con.bulkInsert("temp", "temp3",objects1);
 		System.out.println("Time for Non-indexed Inserts = "+(System.currentTimeMillis()-sti));
 		objects1 = null;
+		System.exit(0);
 		/*object = new JDBObject();
 		object.addPacket(13);
 		object.addPacket("saumil");
