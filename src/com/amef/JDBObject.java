@@ -121,16 +121,16 @@ public class JDBObject
 	
 	public static char getEqvNullType(char type)
 	{
-		if(type=='s' || type=='t' || type=='h' || type=='y')
+		if(type==STRING_TYPE || type==STRING_256_TYPE || type==STRING_65536_TYPE || type==STRING_16777216_TYPE)
 			return NULL_STRING;
-		else if(type=='n' || type=='w' || type=='r' || type=='q'
-				|| type=='f' || type=='x' || type=='e' || type=='l')
+		else if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==S_OBJECT_TYPE
+				|| type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE)
 			return NULL_NUMBER;
-		else if(type=='d')
+		else if(type==DATE_TYPE)
 			return NULL_DATE;
-		else if(type=='b')
+		else if(type==BOOLEAN_TYPE)
 			return NULL_BOOL;
-		else if(type=='c')
+		else if(type==CHAR_TYPE)
 			return NULL_CHAR;
 		else 
 			return 0;
@@ -342,7 +342,7 @@ public class JDBObject
 	public JDBObject addPacket(char chr)
 	{
 		JDBObject JDBObjectNew = new JDBObject();
-		JDBObjectNew.type = 'c';
+		JDBObjectNew.type = CHAR_TYPE;
 		JDBObjectNew.name = "";
 		JDBObjectNew.length = 1;
 		JDBObjectNew.value = new byte[]{(byte)chr};	
@@ -614,16 +614,16 @@ public class JDBObject
 	public void addPacket(JDBObject packet)
 	{
 		packets.add(packet);
-		if(packet.type=='o')
+		if(packet.type==OBJECT_TYPE)
 		{
 			if(packet.length+1<256)
-				packet.type = 'm';
+				packet.type = VS_OBJECT_TYPE;
 			else if(packet.length+1<65536)
-				packet.type = 'q';
+				packet.type = S_OBJECT_TYPE;
 			else if(packet.length+1<16777216)
-				packet.type = 'p';
+				packet.type = B_OBJECT_TYPE;
 			else
-				packet.type = 'o';
+				packet.type = OBJECT_TYPE;
 		}
 		length += packet.getLength();
 		namedLength += packet.getNamedLength(false);
@@ -641,31 +641,31 @@ public class JDBObject
 	 */
 	public void addPacket(byte[] packet,char type)
 	{
-		if(type=='s' || type=='d' || type=='t' || type=='h' || type=='y')
+		if(type==STRING_TYPE || type==DATE_TYPE || type==STRING_256_TYPE || type==STRING_65536_TYPE || type==STRING_16777216_TYPE)
 		{
 			addPacket(packet);
 		}
-		else if(type=='n' || type=='w' || type=='r' || type=='i')
+		else if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
 			addPacket(JdbResources.byteArrayToInt(packet));
 		}
-		else if(type=='f' || type=='x' || type=='e' || type=='l')
+		else if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE)
 		{
 			addPacket(JdbResources.byteArrayToLong(packet));
 		}
-		else if(type=='u')
+		else if(type==DOUBLE_FLOAT_TYPE)
 		{
 			addPacket(Double.parseDouble(new String(packet)));
 		}
-		else if(type=='b')
+		else if(type==BOOLEAN_TYPE)
 		{
 			addPacket(packet[0]=='1'?true:false);
 		}
-		else if(type=='c')
+		else if(type==CHAR_TYPE)
 		{
 			addPacket((char)packet[0]);
 		}
-		else if(type=='a' || type=='g' || type=='j' || type=='k' || type=='v' || type=='z')
+		else if(type==NULL_STRING || type==NULL_NUMBER || type==NULL_DATE || type==NULL_FPN || type==NULL_BOOL || type==NULL_CHAR)
 		{
 			addNullPacket(type);
 		}
@@ -690,19 +690,19 @@ public class JDBObject
 	
 	public int getLength()
 	{
-		if(type=='m')
+		if(type==VS_OBJECT_TYPE)
 		{
 			return 2 + length;
 		}
-		else if(type=='q')
+		else if(type==S_OBJECT_TYPE)
 		{
 			return 3 + length;
 		}
-		else if(type=='p')
+		else if(type==B_OBJECT_TYPE)
 		{
 			return 4 + length;
 		}
-		else if(type=='o')
+		else if(type==OBJECT_TYPE)
 		{
 			return 5 + length;
 		}
@@ -713,126 +713,116 @@ public class JDBObject
 	
 	public static boolean isString(char type)
 	{
-		if(type=='s' || type=='t' || type=='h' || type=='y' || type=='a')
+		if(type==STRING_256_TYPE || type==STRING_65536_TYPE || 
+				type==STRING_16777216_TYPE || type==STRING_TYPE || type==NULL_STRING)
 			return true;
 		return false;		
 	}
 	
 	public static boolean isFloatingPoint(char type)
 	{
-		if(type=='u' || type=='k')
+		if(type==DOUBLE_FLOAT_TYPE || type==NULL_FPN)
 			return true;
 		return false;		
 	}
 	
 	public static boolean isNumber(char type)
 	{
-		if(type=='n' || type=='w' || type=='r' || type=='i'
-			|| type=='f' || type=='x' || type=='e' || type=='l' || type=='g')
+		if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE
+			|| type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==VS_LONG_INT_TYPE || type==LONG_INT_TYPE || type==NULL_NUMBER)
 			return true;	
 		return false;
 	}
 	
 	public static boolean isInteger(char type)
 	{
-		if(type=='n' || type=='w' || type=='r' || type=='i')
+		if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 			return true;	
 		return false;
 	}
 	
 	public static boolean isLong(char type)
 	{
-		if(type=='n' || type=='w' || type=='r' || type=='i'
-			|| type=='f' || type=='x' || type=='e' || type=='l')
+		if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE
+				|| type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==VS_LONG_INT_TYPE || type==LONG_INT_TYPE)
 			return true;	
 		return false;
 	}
 	
 	public static boolean isChar(char type)
 	{
-		if(type=='c' ||  type=='z')
+		if(type==CHAR_TYPE ||  type==NULL_CHAR)
 			return true;	
 		return false;
 	}
 	
 	public static boolean isBoolean(char type)
 	{
-		if(type=='b' || type=='v')
+		if(type==BOOLEAN_TYPE || type==NULL_BOOL)
 			return true;	
 		return false;
 	}
 	
 	public static boolean isDate(char type)
 	{
-		if(type=='d' || type=='j')
+		if(type==DATE_TYPE || type==NULL_DATE)
 			return true;
 		return false;
 	}
 	
 	public boolean isString()
 	{
-		if(type=='s' || type=='t' || type=='h' || type=='y' || type=='a')
-			return true;
-		return false;		
+		return isString();	
 	}
 	
 	public boolean isFloatingPoint()
 	{
-		if(type=='u' || type=='k')
-			return true;
-		return false;		
+		return isFloatingPoint();		
 	}
 	
 	public boolean isNumber()
 	{
-		if(type=='n' || type=='w' || type=='r' || type=='i'
-			|| type=='f' || type=='x' || type=='e' || type=='l' || type=='g')
-			return true;	
-		return false;
+		return isNumber();
 	}
 	
 	public boolean isChar()
 	{
-		if(type=='b' || type=='c' || type=='v' || type=='z')
-			return true;	
-		return false;
+		return isChar();
 	}
 	
 	public boolean isDate()
 	{
-		if(type=='d' || type=='j')
-			return true;
-		return false;
+		return isDate();
 	}
 	
 	public int getNamedLength(boolean ignoreName)
 	{
 		if(ignoreName)
 		{
-			if(getType()=='o')
+			if(getType()==OBJECT_TYPE)
 			{
 				if(length<256)
-					type = 'm';
+					type = VS_OBJECT_TYPE;
 				else if(length<65536)
-					type = 'q';
+					type = S_OBJECT_TYPE;
 				else if(length<16777216)
-					type = 'p';
+					type = B_OBJECT_TYPE;
 				else
-					type = 'o';
+					type = OBJECT_TYPE;
 				return getLength();
 			}
 			else
 			{
 				int len = length;
-				if(getType()!='n' && getType()!='w' && getType()!='r' 
-					&& getType()!='i' && getType()!='f' && getType()!='x' 
-						&& getType()!='e' && getType()!='l' && getType()!='b'
-							&& getType()!='c')
+				if(getType()!=VERY_SMALL_INT_TYPE && getType()!=SMALL_INT_TYPE && getType()!=BIG_INT_TYPE 
+					&& getType()!=INT_TYPE && getType()!=VS_LONG_INT_TYPE && getType()!=S_LONG_INT_TYPE 
+						&& getType()!=B_LONG_INT_TYPE && getType()!=LONG_INT_TYPE && getType()!=BOOLEAN_TYPE
+							&& getType()!=CHAR_TYPE)
 				{
 					len++;
 				}
-				if(getType()=='a' || getType()=='g'
-					|| getType()=='j' || getType()=='v' || getType()=='z')
+				if(getType()==NULL_STRING || getType()==NULL_NUMBER
+					|| getType()==NULL_DATE || getType()==NULL_BOOL || getType()==NULL_CHAR)
 					return len;
 				if(length<256)
 					len++;
@@ -847,31 +837,31 @@ public class JDBObject
 		}
 		else
 		{
-			if(getType()=='o')
+			if(getType()==OBJECT_TYPE)
 			{
 				if(2 + namedLength<256)
 				{
-					type = 'm';
+					type = VS_OBJECT_TYPE;
 					namedLength += 2;
 				}
 				else if(2 + namedLength<65536)
 				{
-					type = 'q';
+					type = S_OBJECT_TYPE;
 					namedLength += 3;
 				}
 				else if(2 + namedLength<16777216)
 				{
-					type = 'p';
+					type = B_OBJECT_TYPE;
 					namedLength += 4;
 				}
 				else
 				{
-					type = 'o';
+					type = OBJECT_TYPE;
 					namedLength += 5;
 				}
 				return namedLength;
 			}
-			else if(getType()=='m' || getType()=='p' || getType()=='q')
+			else if(getType()==VS_OBJECT_TYPE || getType()==B_OBJECT_TYPE || getType()==S_OBJECT_TYPE)
 			{
 				return namedLength;
 			}
@@ -928,23 +918,23 @@ public class JDBObject
 	}
 	public Object getTValue()
 	{
-		if(type=='s' || type=='t' || type=='d' || type=='h' || type=='y' || type=='u')
+		if(type==STRING_TYPE || type==STRING_256_TYPE || type==DATE_TYPE || type==STRING_65536_TYPE || type==STRING_16777216_TYPE || type==DOUBLE_FLOAT_TYPE)
 			return value;
-		else if(getType()!='n' && getType()!='w' && getType()!='r' 
-				&& getType()!='i')
+		else if(getType()!=VERY_SMALL_INT_TYPE && getType()!=SMALL_INT_TYPE && getType()!=BIG_INT_TYPE 
+				&& getType()!=INT_TYPE)
 		{
 			return getIntValue();
 		}
-		else if(getType()!='f' && getType()!='x' 
-					&& getType()!='e' && getType()!='l')
+		else if(getType()!=VS_LONG_INT_TYPE && getType()!=S_LONG_INT_TYPE 
+					&& getType()!=B_LONG_INT_TYPE && getType()!=LONG_INT_TYPE)
 		{
 			return getLongValue();
 		}
-		else if(getType()!='b')
+		else if(getType()!=BOOLEAN_TYPE)
 		{
 			return getBooleanValue();
 		}
-		else if(getType()!='c')
+		else if(getType()!=CHAR_TYPE)
 		{
 			return (char)value[0];
 		}
@@ -969,7 +959,7 @@ public class JDBObject
 	 */
 	public boolean getBooleanValue()
 	{
-		if(type=='b')
+		if(type==BOOLEAN_TYPE)
 			return (value.equals("1")?true:false);
 		else
 			return false;
@@ -980,7 +970,7 @@ public class JDBObject
 	 */
 	public int getIntValue()
 	{
-		if(type=='n' || type=='w' || type=='r' || type=='i')
+		if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
 			return JdbResources.byteArrayToInt(value);
 		}
@@ -993,7 +983,7 @@ public class JDBObject
 	 */
 	public double getDoubleValue()
 	{
-		if(type=='u')
+		if(type==DOUBLE_FLOAT_TYPE)
 			return (Double.valueOf(new String(value)));
 		else
 			return -1;
@@ -1004,7 +994,7 @@ public class JDBObject
 	 */
 	public long getLongValue()
 	{
-		if(type=='f' || type=='x' || type=='e' || type=='l')
+		if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE)
 		{
 			return JdbResources.byteArrayToLong(value);
 		}
@@ -1014,8 +1004,8 @@ public class JDBObject
 	
 	public long getNumericValue()
 	{
-		if(type=='f' || type=='x' || type=='e' || type=='l'
-			|| type=='n' || type=='w' || type=='r' || type=='i')
+		if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE
+			|| type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
 			return JdbResources.byteArrayToLong(value);
 		}
@@ -1028,7 +1018,7 @@ public class JDBObject
 	 */
 	public Date getDateValue()
 	{
-		if(type=='b') 
+		if(type==BOOLEAN_TYPE) 
 		{
 			try
 			{
@@ -1062,7 +1052,7 @@ public class JDBObject
 				displ += obj.getValueStr() + "\n";
 			else if(obj.isChar())
 			{
-				if(type=='b')
+				if(type==BOOLEAN_TYPE)
 					displ += obj.getBooleanValue() + "\n";
 				else
 					displ += (char)obj.value[0] + "\n";
@@ -1071,7 +1061,7 @@ public class JDBObject
 			{
 				displ += obj.getNumericValue() + "\n";
 			}
-			if(obj.type=='o' || obj.type=='p' || obj.type=='q' || obj.type=='m')
+			if(obj.type==OBJECT_TYPE || obj.type==B_OBJECT_TYPE || obj.type==S_OBJECT_TYPE || obj.type==VS_OBJECT_TYPE)
 			{
 				displ += obj.displayObject(tab+"\t");
 			}
@@ -1151,4 +1141,30 @@ public class JDBObject
 		else
 			return 0;
 	}
+	
+	public boolean isNullString()
+	{
+		return type==NULL_STRING;
+	}
+	
+	public boolean isNullNumber()
+	{
+		return type==NULL_NUMBER;
+	}
+	
+	public boolean isNullFPN()
+	{
+		return type==NULL_FPN;
+	}
+	
+	public boolean isNullDate()
+	{
+		return type==NULL_DATE;
+	}
+	
+	public boolean isNullChar()
+	{
+		return type==NULL_CHAR;
+	}
+	
 }

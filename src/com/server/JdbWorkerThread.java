@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import com.amef.JDBObject;
 import com.jdb.BulkConnection;
 import com.jdb.ConnectionManager;
@@ -54,8 +55,15 @@ public class JdbWorkerThread implements Runnable
 	{	
 		try
 		{
-			do
+			outer: do
 			{
+				reader.reset();
+				while((data = reader.read(channel,3))==null)
+				{
+					if(reader.isClosed())
+						break outer;
+					Thread.sleep(1);
+				}
 				long st = System.currentTimeMillis();
 				try
 				{		
@@ -77,7 +85,8 @@ public class JdbWorkerThread implements Runnable
 						buf.put((byte)'T');//buf.put((byte)'R');buf.put((byte)'U');buf.put((byte)'E');
 						buf.flip();
 						channel.write(buf);	
-						buf.clear();						
+						buf.clear();	
+						//System.out.println("Insert done");
 					}
 					else if(quer.indexOf("update ")!=-1)
 					{
@@ -116,14 +125,14 @@ public class JdbWorkerThread implements Runnable
 						long sentpacks = 0;
 						long spetw = 0;
 						ByteBuffer b = ByteBuffer.allocate(64*1024);
-						int count = 0;
+						int count = 0,cuurcnt=0;
 						while(pend<100000)
 						{
 							while((obj=q.poll())==null)
 							{
-								Thread.sleep(1);
-								pend+= 1;
-								spetw+=1;
+								Thread.sleep(2);
+								pend+= 2;
+								spetw+=2;
 							}
 							if(obj!=null)
 							{
@@ -156,6 +165,7 @@ public class JdbWorkerThread implements Runnable
 										b1.flip();
 										
 										channel.write(b1);
+										
 										b.clear();
 										count = 0;
 									}
@@ -163,12 +173,18 @@ public class JdbWorkerThread implements Runnable
 								}
 								else if(obj instanceof String)
 									break;
+								if(cuurcnt==100000)
+								{
+									Thread.sleep(10);
+									cuurcnt = 0;
+								}
 								if(sentpacks>9999999)
 								{
 									Thread.sleep(0,100);
 									sentpacks = 0;
 								}
 							}
+							
 						}
 						if(b.position()>0)
 						{
@@ -255,12 +271,12 @@ public class JdbWorkerThread implements Runnable
 						new File(fileName+"pos").delete();
 						//con.refresh();
 					}
-					reader.reset();
-					while((data = reader.read(channel,3))==null){Thread.sleep(1);}
+					
 				}
 				catch (InterruptedException e)
 				{
 					e.printStackTrace();
+					break;
 				}
 				catch (IOException e)
 				{
@@ -269,6 +285,7 @@ public class JdbWorkerThread implements Runnable
 				catch (Exception e)
 				{
 					e.printStackTrace();
+					break;
 				}
 				Thread.sleep(1);
 			}while(!JdbServer.receivedShutDownRequest());
@@ -342,7 +359,7 @@ public class JdbWorkerThread implements Runnable
 		String set = quer.indexOf(" set ")!=-1?quer.substring(quer.indexOf(" set ")+5,whrend):"";
 		if(set.equals(""))
 			return;
-		String[] qparts = set.split(",");
+		//String[] qparts = set.split(",");
 		JDBObject querry = JdbResources.getDecoder().decodeB(query.getPackets().get(1).getValue(), true, false);
 		Map<String,byte[]> nvalues = new HashMap<String, byte[]>();
 		for (int i = 0; i < querry.getPackets().size(); i++)

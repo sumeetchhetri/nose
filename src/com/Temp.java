@@ -30,5 +30,35 @@ public class Temp  implements Serializable
 	public int id;
 	public String name,date1;
 	public boolean flag;
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getDate1() {
+		return date1;
+	}
+	public void setDate1(String date1) {
+		this.date1 = date1;
+	}
+	public boolean isFlag() {
+		return flag;
+	}
+	public void setFlag(boolean flag) {
+		this.flag = flag;
+	}
+	public char getInd() {
+		return ind;
+	}
+	public void setInd(char ind) {
+		this.ind = ind;
+	}
 	public char ind;
 }

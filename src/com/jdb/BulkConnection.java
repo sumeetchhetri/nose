@@ -4856,7 +4856,7 @@ public class BulkConnection
 		}
 		try
 		{
-			q.add(JdbResources.getEncoder().encodeB(objtab, false));
+			//q.add(JdbResources.getEncoder().encodeB(objtab, false));
 			if(qparts.length>0 && objtab1.getPackets().size()==0)
 			{
 				for (int i = 0; i < qparts.length; i++)
@@ -4864,14 +4864,14 @@ public class BulkConnection
 					objtab1.addPacket(i,qparts[i]);
 				}
 			}
-			q.add(JdbResources.getEncoder().encodeB(objtab1, false));
+			//q.add(JdbResources.getEncoder().encodeB(objtab1, false));
 			if(table.getRecords()==0)
 			{
 				q.add("DONE");
 				return;
 			}
 		}
-		catch (AMEFEncodeException e)
+		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
