@@ -34,7 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.jdb.JdbTask;
 
-public class JdbServer
+public final class JdbServer
 {
 	
 	public static ScheduledExecutorService workerThreadPool = null;

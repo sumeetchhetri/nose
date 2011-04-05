@@ -31,7 +31,7 @@ import com.jdb.JdbResources;
  * can be a string, number, date, boolean, character or any complex object
  * Every message consists of only one JDBObjectNew *
  */
-public class JDBObject
+public final class JDBObject
 {
 	public static final char NULL_STRING = 'a';
 	

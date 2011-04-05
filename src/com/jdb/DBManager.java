@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings("unchecked")
-public class DBManager
+public final class DBManager
 {
 	private volatile static DBManager dbManager;
 	protected HashMap<String,Database> databases;

@@ -21,7 +21,7 @@ import com.jdb.JdbResources;
  * The AMEFDecoder class
  * providses the decode method to get the JDBObject from its transmission form
  */
-public class JDBDecoder
+public final class JDBDecoder
 {
 	//private String tempVal = "";
 	
@@ -93,7 +93,7 @@ public class JDBDecoder
 		{
 			strdata = buffer;
 		}
-		JDBObject JDBObject = decodeSinglePacketB(strdata,ignoreName);
+		JDBObject JDBObject = ignoreName?decodeSinglePacketBIN(strdata):decodeSinglePacketB(strdata,ignoreName);
 		return JDBObject;
 	}
 	
@@ -1274,6 +1274,220 @@ public class JDBDecoder
 			while(position<buffer.length)
 			{
 				JDBObject obj = decodeSinglePacketB(buffer,ignoreName);
+				jDBObject.addPacket(obj);
+			}
+		}
+		return jDBObject;
+	}
+	
+	private JDBObject decodeSinglePacketBIN(byte[] buffer) throws AMEFDecodeException
+	{
+		char type = (char)buffer[position];
+		JDBObject jDBObject = null;
+		if(type==JDBObject.NULL_STRING || type==JDBObject.NULL_DATE || type==JDBObject.NULL_NUMBER
+				|| type==JDBObject.NULL_BOOL || type==JDBObject.NULL_CHAR)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);position++;		
+		}
+		else if(type==JDBObject.STRING_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			jDBObject.setLength(lengthm);
+			position += 4;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			jDBObject.setValue(value);
+			position += 5+lengthm;			
+		}
+		else if(type==JDBObject.STRING_65536_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			jDBObject.setLength(lengthm);
+			position += 2;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			jDBObject.setValue(value);
+			position += 3+lengthm;			
+		}
+		else if(type==JDBObject.STRING_16777216_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			jDBObject.setLength(lengthm);
+			position += 3;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			jDBObject.setValue(value);
+			position += 4+lengthm;			
+		}		
+		else if(type==JDBObject.DATE_TYPE || type==JDBObject.STRING_256_TYPE || type==JDBObject.DOUBLE_FLOAT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);			
+			jDBObject.setLength(lengthm);
+			position++;
+			byte[] value = new byte[lengthm];			
+			System.arraycopy(buffer, position, value, 0, value.length);
+			jDBObject.setValue(value);
+			position += lengthm;			
+		}
+		else if(type==JDBObject.VERY_SMALL_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(1);
+			jDBObject.setValue(new byte[]{buffer[position]});
+			position += 1;	
+		}
+		else if(type==JDBObject.SMALL_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(2);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1]});
+			position += 2;		
+		}
+		else if(type==JDBObject.BIG_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(3);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],buffer[position+2]});
+			position += 3;		
+		}
+		else if(type==JDBObject.INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(4);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3]});
+			position += 4;		
+		}
+		else if(type==JDBObject.VS_LONG_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(5);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4]});
+			position += 5;		
+		}
+		else if(type==JDBObject.S_LONG_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(6);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4],buffer[position+5]});
+			position += 6;		
+		}
+		else if(type==JDBObject.B_LONG_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(7);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4],buffer[position+5],buffer[position+6]});
+			position += 7;		
+		}
+		else if(type==JDBObject.LONG_INT_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(8);
+			jDBObject.setValue(new byte[]{buffer[position],buffer[position+1],
+					buffer[position+2],buffer[position+3],buffer[position+4],
+					buffer[position+5],buffer[position+6],buffer[position+7]});
+			position += 8;		
+		}
+		else if(type==JDBObject.BOOLEAN_TYPE || type==JDBObject.CHAR_TYPE)
+		{			
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			jDBObject.setLength(1);
+			jDBObject.setValue(new byte[]{buffer[position]});
+			position += 1;		
+		}
+		else if(type==JDBObject.VS_OBJECT_TYPE)
+		{				
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);
+			jDBObject.setLength(lengthm);
+			position++;
+			while(position<buffer.length)
+			{
+				JDBObject obj = decodeSinglePacketBIN(buffer);
+				jDBObject.addPacket(obj);
+			}
+		}
+		else if(type==JDBObject.S_OBJECT_TYPE)
+		{				
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 3, value, 0, lengthm);
+			position += 2;
+			while(position<buffer.length)
+			{
+				JDBObject obj = decodeSinglePacketBIN(buffer);
+				jDBObject.addPacket(obj);
+			}
+		}
+		else if(type==JDBObject.B_OBJECT_TYPE)
+		{				
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 4, value, 0, lengthm);
+			position += 3;
+			while(position<buffer.length)
+			{
+				JDBObject obj = decodeSinglePacketBIN(buffer);
+				jDBObject.addPacket(obj);
+			}
+		}
+		else if(type==JDBObject.OBJECT_TYPE)
+		{				
+			jDBObject = new JDBObject();
+			jDBObject.setType(type);
+			position++;
+			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 5, value, 0, lengthm);
+			position += 4;
+			while(position<buffer.length)
+			{
+				JDBObject obj = decodeSinglePacketBIN(buffer);
 				jDBObject.addPacket(obj);
 			}
 		}

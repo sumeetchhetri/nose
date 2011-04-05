@@ -34,7 +34,7 @@ import com.jdb.BulkConnection;
 import com.jdb.ConnectionManager;
 import com.jdb.JdbResources;
 
-public class JdbWorkerThread implements Runnable
+public final class JdbWorkerThread implements Runnable
 {
 	byte[] data;
 	SocketChannel channel;

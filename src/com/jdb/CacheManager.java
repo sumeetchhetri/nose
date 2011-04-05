@@ -15,7 +15,7 @@
 */
 package com.jdb;
 
-public class CacheManager
+public final class CacheManager
 {
 	private volatile static CacheManager cacheManager;
 	

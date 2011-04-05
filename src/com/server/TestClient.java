@@ -451,7 +451,7 @@ public final class TestClient
 			return objects;
 		}
 		
-		public RowObject selectf() throws Exception
+		public RowObject selectf(boolean flag) throws Exception
 		{
 			RowObject object = null;
 			JDBObject query = new JDBObject();
@@ -465,7 +465,7 @@ public final class TestClient
 			{
 				sock.write(buf);			
 				//JdbAMEFObjMakef maker = new JdbAMEFObjMakef();
-				JdbAMEFObjMakef2 makef = new JdbAMEFObjMakef2();
+				JdbAMEFObjMakef2 makef = new JdbAMEFObjMakef2(flag);
 				JdbAMEFReaderf amefRead = new JdbAMEFReaderf(new JdbDataReader(),sock,makef);
 				//JdbAMEFReaderfo amefRead = new JdbAMEFReaderfo(new JdbDataReader(),sock,maker);
 				new Thread(amefRead).start();
@@ -590,22 +590,22 @@ public final class TestClient
 			long st = System.currentTimeMillis();
 			Session session = new Session();
 			session.beginTransaction();
-			for (int i = 0; i < 100; i++)
+			for (int i = 0; i < 1000000; i++)
 			{
-				session.save(tem);
-				session.flush();
+				//session.save(tem);
+				//session.flush();
 			}
 			com.Temp tem1 = new com.Temp();
 			tem1.id  = 22;
 			//session.update(tem1);
-			session.commit();
+			//session.commit();
 			//System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
 			System.out.println("Time for inserts = "+(System.currentTimeMillis()-st));
 			st = System.currentTimeMillis();
-			RowObject obj = session.selectf();
+			RowObject obj = session.selectf(false);
 			System.out.println("Time for select  = "+(System.currentTimeMillis()-st));
-			st = System.currentTimeMillis();
-			obj.get(999999);
+			//st = System.currentTimeMillis();
+			//for (int i = 0; i < obj.size(); i++) obj.get(i);
 			System.out.println("Time for all fetch  = "+(System.currentTimeMillis()-st));
 			
 			/*long st1 = System.currentTimeMillis();stt=st1;
@@ -1525,11 +1525,13 @@ public final class TestClient
 	{
 		private ConcurrentLinkedQueue<byte[]> q;
 		private List<byte[]> objects = null;
-		public boolean done = false;
-		public JdbAMEFObjMakef2()
+		public boolean huge = false;
+		
+		public JdbAMEFObjMakef2(boolean flag)
 		{
 			q = new ConcurrentLinkedQueue<byte[]>();
 			objects = new ArrayList<byte[]>();
+			huge = flag;
 		}
 		public void addToQ(byte[] data)
 		{
@@ -1537,7 +1539,14 @@ public final class TestClient
 		}
 		public RowObject call() throws Exception
 		{
-			RowObject rowObject = new SmallRowObject();
+			RowObject rowObject = null;
+			if(huge)
+			{
+				rowObject = new HugeRowObject();
+				rowObject.spawn();
+			}
+			else
+				rowObject = new SmallRowObject();
 			ByteBuffer buffl = null; 
 			long st = System.currentTimeMillis();
 			byte[] data = null;

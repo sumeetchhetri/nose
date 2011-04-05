@@ -18,7 +18,7 @@ package com.jdb;
 import com.amef.JDBDecoder;
 import com.amef.JDBEncoder;
 
-public class JdbResources
+public final class JdbResources
 {
 	private JdbResources()
 	{

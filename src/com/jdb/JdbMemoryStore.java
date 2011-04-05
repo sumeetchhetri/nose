@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.amef.JDBObject;
 
-public class JdbMemoryStore
+public final class JdbMemoryStore
 {
 	static class TableData
 	{

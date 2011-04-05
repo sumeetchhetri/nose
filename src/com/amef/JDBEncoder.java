@@ -23,7 +23,7 @@ import com.jdb.JdbResources;
  * The AMEF Encoder Class
  * provides the encode method to encode the JDBObject
  */
-public class JDBEncoder
+public final class JDBEncoder
 {
 	/*The default delimiter for single object representation*/
 	//private String delim = ",";

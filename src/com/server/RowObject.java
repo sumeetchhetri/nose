@@ -23,4 +23,6 @@ public interface RowObject {
 	public Object get(int index);
 	
 	public void addData(byte[] data);
+	
+	public void spawn();
 }
