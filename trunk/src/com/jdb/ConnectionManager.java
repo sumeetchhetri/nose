@@ -18,7 +18,7 @@ package com.jdb;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectionManager
+public final class ConnectionManager
 {
 	private ConnectionManager()
 	{

@@ -45,7 +45,7 @@ import com.jdb.Table.Opval;
 import com.server.JdbFlusher;
 
 @SuppressWarnings("unchecked")
-public class BulkConnection
+public final class BulkConnection
 {
 	ScheduledExecutorService workerThreadPool = null;
 	

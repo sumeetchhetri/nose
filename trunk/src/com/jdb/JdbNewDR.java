@@ -18,7 +18,7 @@ package com.jdb;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class JdbNewDR
+public final class JdbNewDR
 {
 	public JdbNewDR()
 	{

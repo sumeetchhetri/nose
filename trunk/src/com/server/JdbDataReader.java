@@ -21,7 +21,7 @@ import java.nio.channels.SocketChannel;
 
 import com.jdb.Reader;
 
-class JdbDataReader implements Reader
+public final class JdbDataReader implements Reader
 {
 	public JdbDataReader()
 	{

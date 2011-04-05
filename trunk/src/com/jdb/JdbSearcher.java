@@ -15,15 +15,19 @@
 */
 package com.jdb;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Queue;
 import com.amef.JDBObject;
 
-public class JdbSearcher implements Runnable
+public final class JdbSearcher implements Runnable
 {
 	private String subq,grpbycol;
 	private Queue<Object> q;
@@ -61,7 +65,7 @@ public class JdbSearcher implements Runnable
 			{
 				//JdbMemoryStore.getJdbMemoryStore();
 				//JdbMemoryStore.getJdbMemoryStore().selectFromStore(q,table,index);
-				jdbin = new FileInputStream(new File(table.getFileName(index)));
+				jdbin = new BufferedInputStream(new FileInputStream(new File(table.getFileName(index))));
 				if(distinct)
 					rec = table.getAMEFObjectsDo(q,jdbin,subq,objtab,qparts,one,aggr,grpbycol);
 				else
@@ -69,7 +73,7 @@ public class JdbSearcher implements Runnable
 			}
 			else
 			{
-				jdbin = new FileInputStream(new File(table.getFileName(index)));
+				jdbin = new BufferedInputStream(new FileInputStream(new File(table.getFileName(index))));
 				rec = table.getAMEFObjectsb(q,jdbin,subq,objtab,qparts);	
 			}
 			//System.out.println("time reqd for search = "+(System.currentTimeMillis()-st2));

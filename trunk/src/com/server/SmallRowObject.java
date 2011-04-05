@@ -7,7 +7,7 @@ import com.amef.AMEFDecodeException;
 import com.amef.JDBObject;
 import com.jdb.JdbResources;
 
-public class SmallRowObject implements RowObject
+public final class SmallRowObject implements RowObject
 {
 	
 	public List<Index> indexes = new ArrayList<Index>();
@@ -46,5 +46,11 @@ public class SmallRowObject implements RowObject
 	public int datasize() {
 		// TODO Auto-generated method stub
 		return objects.size();
+	}
+
+	@Override
+	public void spawn() {
+		// TODO Auto-generated method stub
+		
 	}
 }

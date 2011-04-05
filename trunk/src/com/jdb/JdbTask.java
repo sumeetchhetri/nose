@@ -17,7 +17,7 @@ package com.jdb;
 
 import java.nio.channels.SocketChannel;
 
-public class JdbTask
+public final class JdbTask
 {
 	byte[] data;
 	SocketChannel channel;

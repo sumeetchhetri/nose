@@ -53,7 +53,7 @@ import com.amef.JDBObject;
 import com.server.JdbFlusher;
 
 @SuppressWarnings("unchecked")
-public class Table implements Serializable
+public final class Table implements Serializable
 {
 	public long currpos = 0;
 	public transient ReentrantReadWriteLock lock;
@@ -906,7 +906,7 @@ public class Table implements Serializable
 		}
 		try
 		{
-			byte[] type = new byte[1];	
+			byte[] type = new byte[5];	
 			if(!pksrch)
 			{	
 				int cuurcnt = 0;
@@ -922,39 +922,41 @@ public class Table implements Serializable
 						byte[] le = null;
 						if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
 						{
-							le = new byte[1];
-							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							//le = new byte[1];
+							//jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(type,1,1)-3;
 						}
 						else if(type[0]==JDBObject.S_OBJECT_TYPE)
 						{
-							le = new byte[2];
-							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							//le = new byte[2];
+							//jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(type,1,2)-2;
 						}
 						else if(type[0]==JDBObject.B_OBJECT_TYPE)
 						{
-							le = new byte[3];
-							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							//le = new byte[3];
+							//jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(type,1,3)-1;
 						}
 						else
 						{
-							le = new byte[4];
-							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							//le = new byte[4];
+							//jdbin.read(le);
+							lengthm = JdbResources.byteArrayToInt(type,1,4);
 						}
-						ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
-						byte[] data = new byte[lengthm];
-						jdbin.read(data);
-						buf.put(type);
-						buf.put(le);
-						buf.put(data);
-						buf.flip();
-						buf.clear();
-						JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+						//ByteBuffer buf  = ByteBuffer.allocate(5+lengthm);
+						byte[] data = new byte[5+lengthm];
+						System.arraycopy(type, 0, data, 0, 5);
+						jdbin.read(data,5,lengthm);
+						//buf.put(type);
+						//buf.put(le);
+						//buf.put(data);
+						//buf.flip();
+						//buf.clear();
+						JDBObject obh = JdbResources.getDecoder().decodeB(data, false,true);
 						if(whrandcls.size()!=0 || whrorcls.size()!=0)
-						{						
+						{	
+							//obh = JdbResources.getDecoder().decodeB(data, false,true);
 							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
 							{
 								//q.add(buf.array());
@@ -967,7 +969,8 @@ public class Table implements Serializable
 						cuurcnt++;
 						if(qparts==null || qparts.length==0 || qparts[0].equals("*"))
 						{
-							q.add(buf.array());
+							//q.add(buf.array());
+							q.add(data);
 						}
 						else
 						{

@@ -28,7 +28,7 @@ import com.jdb.DBManager;
 import com.jdb.JdbResources;
 import com.jdb.Table;
 
-public class JdbFlusher implements Runnable
+public final class JdbFlusher implements Runnable
 {
 	private BufferedOutputStream[] bos;
 	private boolean commit;

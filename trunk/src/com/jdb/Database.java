@@ -18,7 +18,7 @@ package com.jdb;
 import java.io.Serializable;
 import java.util.HashMap;
 
-public class Database implements Serializable
+public final class Database implements Serializable
 {
 	private String users;
 	protected Database(String name,String user)
