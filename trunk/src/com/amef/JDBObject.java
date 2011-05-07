@@ -24,6 +24,7 @@ import java.util.List;
 
 import com.jdb.JdbResources;
 
+
 /**
  * @author sumeet.chhetri
  * The Automated Message Exchange Format Object type
@@ -772,27 +773,27 @@ public final class JDBObject
 	
 	public boolean isString()
 	{
-		return isString();	
+		return isString(type);	
 	}
 	
 	public boolean isFloatingPoint()
 	{
-		return isFloatingPoint();		
+		return isFloatingPoint(type);		
 	}
 	
 	public boolean isNumber()
 	{
-		return isNumber();
+		return isNumber(type);
 	}
 	
 	public boolean isChar()
 	{
-		return isChar();
+		return isChar(type);
 	}
 	
 	public boolean isDate()
 	{
-		return isDate();
+		return isDate(type);
 	}
 	
 	public int getNamedLength(boolean ignoreName)
@@ -942,6 +943,8 @@ public final class JDBObject
 	}
 	public String getValueStr()
 	{
+		if(value==null)
+			return null;
 		return new String(value);
 	}
 	public void setValue(byte[] value)
