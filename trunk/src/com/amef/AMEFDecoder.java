@@ -14,14 +14,14 @@
     limitations under the License.  
 */
 package com.amef;
-import com.jdb.JdbResources;
+import com.amef.AMEFResources;
 
 /**
  * @author sumeetc
  * The AMEFDecoder class
  * providses the decode method to get the JDBObject from its transmission form
  */
-public final class JDBDecoder
+public final class AMEFDecoder
 {
 	//private String tempVal = "";
 	
@@ -80,9 +80,9 @@ public final class JDBDecoder
 	}
 	*/
 	
-	public JDBObject decodeB(byte[] buffer,boolean considerLength,boolean ignoreName) throws AMEFDecodeException
+	public AMEFObject decodeB(byte[] buffer,boolean considerLength,boolean ignoreName) throws AMEFDecodeException
 	{
-		position = 0;
+		Integer position = 0;
 		byte[] strdata = null;
 		if(considerLength)
 		{
@@ -93,7 +93,8 @@ public final class JDBDecoder
 		{
 			strdata = buffer;
 		}
-		JDBObject JDBObject = ignoreName?decodeSinglePacketBIN(strdata):decodeSinglePacketB(strdata,ignoreName);
+		//JDBObject JDBObject = ignoreName?decodeSinglePacketBINNew(strdata,position):decodeSinglePacketB(strdata,ignoreName,position);
+		AMEFObject JDBObject = decodeSinglePacketBINNew(strdata,position,ignoreName);
 		return JDBObject;
 	}
 	
@@ -256,7 +257,7 @@ public final class JDBDecoder
 		{			
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
-			int lengthm = JdbResources.byteArrayToInt(strdata.substring(1,2).getBytes());
+			int lengthm = AMEFResources.byteArrayToInt(strdata.substring(1,2).getBytes());
 			jDBObject.setLength(lengthm);
 			tempVal = strdata.substring(2,2+lengthm);
 			while(!tempVal.equals(""))
@@ -863,8 +864,8 @@ public final class JDBDecoder
 		return jDBObject;
 	}*/
 	
-	int position = 0;
-	private JDBObject decodeSinglePacketB(byte[] buffer,boolean ignoreName) throws AMEFDecodeException
+	//int position = 0;
+	/*private JDBObject decodeSinglePacketB(byte[] buffer,boolean ignoreName,Integer position) throws AMEFDecodeException
 	{
 		char type = (char)buffer[position];
 		JDBObject jDBObject = null;
@@ -903,7 +904,7 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
 			jDBObject.setLength(lengthm);
 			position += 4;
 			byte[] value = new byte[lengthm];
@@ -927,7 +928,7 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
 			jDBObject.setLength(lengthm);
 			position += 2;
 			byte[] value = new byte[lengthm];
@@ -951,7 +952,7 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
 			jDBObject.setLength(lengthm);
 			position += 3;
 			byte[] value = new byte[lengthm];
@@ -975,7 +976,7 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);			
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);			
 			jDBObject.setLength(lengthm);
 			position++;
 			byte[] value = new byte[lengthm];			
@@ -1185,14 +1186,13 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);
 			jDBObject.setLength(lengthm);
 			position++;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketB(buffer,ignoreName);
-				if(obj==null)
-					System.out.println(new String(buffer)+" "+position);
+				JDBObject obj = decodeSinglePacketB(buffer,ignoreName,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1212,14 +1212,15 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
 			jDBObject.setLength(lengthm);
 			//byte[] value = new byte[lengthm];
 			//System.arraycopy(buffer, 3, value, 0, lengthm);
 			position += 2;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketB(buffer,ignoreName);
+				JDBObject obj = decodeSinglePacketB(buffer,ignoreName,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1239,14 +1240,15 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
 			jDBObject.setLength(lengthm);
 			byte[] value = new byte[lengthm];
 			System.arraycopy(buffer, 4, value, 0, lengthm);
 			position += 3;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketB(buffer,ignoreName);
+				JDBObject obj = decodeSinglePacketB(buffer,ignoreName,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1266,21 +1268,23 @@ public final class JDBDecoder
 			}
 			else 
 				position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
 			jDBObject.setLength(lengthm);
 			byte[] value = new byte[lengthm];
 			System.arraycopy(buffer, 5, value, 0, lengthm);
 			position += 4;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketB(buffer,ignoreName);
+				JDBObject obj = decodeSinglePacketB(buffer,ignoreName,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
+		jDBObject.position = position;
 		return jDBObject;
 	}
 	
-	private JDBObject decodeSinglePacketBIN(byte[] buffer) throws AMEFDecodeException
+	private JDBObject decodeSinglePacketBIN(byte[] buffer,Integer position) throws AMEFDecodeException
 	{
 		char type = (char)buffer[position];
 		JDBObject jDBObject = null;
@@ -1288,6 +1292,7 @@ public final class JDBDecoder
 				|| type==JDBObject.NULL_BOOL || type==JDBObject.NULL_CHAR)
 		{			
 			jDBObject = new JDBObject();
+			jDBObject.setLength(1);
 			jDBObject.setType(type);position++;		
 		}
 		else if(type==JDBObject.STRING_TYPE)
@@ -1295,7 +1300,7 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
 			jDBObject.setLength(lengthm);
 			position += 4;
 			byte[] value = new byte[lengthm];
@@ -1308,7 +1313,7 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
 			jDBObject.setLength(lengthm);
 			position += 2;
 			byte[] value = new byte[lengthm];
@@ -1321,7 +1326,7 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
 			jDBObject.setLength(lengthm);
 			position += 3;
 			byte[] value = new byte[lengthm];
@@ -1334,7 +1339,7 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);			
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);			
 			jDBObject.setLength(lengthm);
 			position++;
 			byte[] value = new byte[lengthm];			
@@ -1434,12 +1439,13 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,1);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);
 			jDBObject.setLength(lengthm);
 			position++;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketBIN(buffer);
+				JDBObject obj = decodeSinglePacketBIN(buffer,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1448,14 +1454,15 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,2);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
 			jDBObject.setLength(lengthm);
 			//byte[] value = new byte[lengthm];
 			//System.arraycopy(buffer, 3, value, 0, lengthm);
 			position += 2;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketBIN(buffer);
+				JDBObject obj = decodeSinglePacketBIN(buffer,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1464,14 +1471,15 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,3);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
 			jDBObject.setLength(lengthm);
 			//byte[] value = new byte[lengthm];
 			//System.arraycopy(buffer, 4, value, 0, lengthm);
 			position += 3;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketBIN(buffer);
+				JDBObject obj = decodeSinglePacketBIN(buffer,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
@@ -1480,17 +1488,450 @@ public final class JDBDecoder
 			jDBObject = new JDBObject();
 			jDBObject.setType(type);
 			position++;
-			int lengthm = JdbResources.byteArrayToInt(buffer,position,4);
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
 			jDBObject.setLength(lengthm);
 			//byte[] value = new byte[lengthm];
 			//System.arraycopy(buffer, 5, value, 0, lengthm);
 			position += 4;
 			while(position<buffer.length)
 			{
-				JDBObject obj = decodeSinglePacketBIN(buffer);
+				JDBObject obj = decodeSinglePacketBIN(buffer,position);
+				position = obj.position;
 				jDBObject.addPacket(obj);
 			}
 		}
+		jDBObject.position = position;
+		return jDBObject;
+	}
+	*/
+	private void addPrimitive(AMEFObject jDBObject,byte[] buffer,Integer position,boolean ignoreName)
+	{
+		char type = (char)buffer[position];
+		if(type==AMEFObject.NULL_STRING || type==AMEFObject.NULL_DATE || type==AMEFObject.NULL_NUMBER
+				|| type==AMEFObject.NULL_BOOL || type==AMEFObject.NULL_CHAR)
+		{			
+			
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				jDBObject.addNullPacket(type,new String(name));
+			}
+			else
+			{
+				position++;
+				jDBObject.addNullPacket(type);
+			}
+		}
+		else if(type==AMEFObject.STRING_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
+			position += 4;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 5+lengthm;			
+		}
+		else if(type==AMEFObject.STRING_65536_TYPE)
+		{		
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
+			position += 2;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 3+lengthm;			
+		}
+		else if(type==AMEFObject.STRING_16777216_TYPE)
+		{		
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
+			position += 3;
+			byte[] value = new byte[lengthm];
+			System.arraycopy(buffer, position, value, 0, value.length);
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 4+lengthm;			
+		}		
+		else if(type==AMEFObject.DATE_TYPE || type==AMEFObject.STRING_256_TYPE || type==AMEFObject.DOUBLE_FLOAT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);			
+			//jDBObject.setLength(lengthm);
+			position++;
+			byte[] value = new byte[lengthm];			
+			System.arraycopy(buffer, position, value, 0, value.length);
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += lengthm;			
+		}
+		else if(type==AMEFObject.VERY_SMALL_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(1);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 1;	
+		}
+		else if(type==AMEFObject.SMALL_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(2);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 2;		
+		}
+		else if(type==AMEFObject.BIG_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(3);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],buffer[position+2]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 3;		
+		}
+		else if(type==AMEFObject.INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(4);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 4;		
+		}
+		else if(type==AMEFObject.VS_LONG_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(5);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 5;		
+		}
+		else if(type==AMEFObject.S_LONG_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(6);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4],buffer[position+5]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 6;		
+		}
+		else if(type==AMEFObject.B_LONG_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(7);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],buffer[position+2],
+					buffer[position+3],buffer[position+4],buffer[position+5],buffer[position+6]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 7;		
+		}
+		else if(type==AMEFObject.LONG_INT_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//jDBObject.setLength(8);
+			long value = AMEFResources.byteArrayToLong(new byte[]{buffer[position],buffer[position+1],
+					buffer[position+2],buffer[position+3],buffer[position+4],
+					buffer[position+5],buffer[position+6],buffer[position+7]});
+			if(names==null)jDBObject.addPacket(value);else jDBObject.addPacket(value,names);
+			position += 8;		
+		}
+		else if(type==AMEFObject.BOOLEAN_TYPE || type==AMEFObject.CHAR_TYPE)
+		{	
+			String names = null;
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			if(type==AMEFObject.BOOLEAN_TYPE)
+			{	
+				if(names==null)jDBObject.addPacket(buffer[position]=='1'?true:false);
+				else jDBObject.addPacket(buffer[position]=='1'?true:false);
+			}
+			else
+			{
+				if(names==null)jDBObject.addPacket((char)buffer[position]);
+				else
+					jDBObject.addPacket((char)buffer[position],names);
+			}
+			position += 1;		
+		}
+		jDBObject.position = position;
+	}
+	
+	private AMEFObject decodeSinglePacketBINNew(byte[] buffer,Integer position,boolean ignoreName) throws AMEFDecodeException
+	{
+		char type = (char)buffer[position];
+		AMEFObject jDBObject = null;
+		if(type==AMEFObject.VS_OBJECT_TYPE)
+		{	
+			String names = null;
+			jDBObject = new AMEFObject();
+			//jDBObject.setType(type);
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//int lengthm = AMEFResources.byteArrayToInt(buffer,position,1);
+			//jDBObject.setLength(lengthm);
+			position++;
+			while(position<buffer.length)
+			{
+				addPrimitive(jDBObject, buffer, position,ignoreName);
+				position = jDBObject.position;
+			}
+			if(names!=null)jDBObject.setName(names);
+		}
+		else if(type==AMEFObject.S_OBJECT_TYPE)
+		{	
+			String names = null;
+			jDBObject = new AMEFObject();
+			//jDBObject.setType(type);
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//int lengthm = AMEFResources.byteArrayToInt(buffer,position,2);
+			//jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 3, value, 0, lengthm);
+			position += 2;
+			while(position<buffer.length)
+			{
+				addPrimitive(jDBObject, buffer, position,ignoreName);
+				position = jDBObject.position;
+			}
+			if(names!=null)jDBObject.setName(names);
+		}
+		else if(type==AMEFObject.B_OBJECT_TYPE)
+		{	
+			String names = null;
+			jDBObject = new AMEFObject();
+			//jDBObject.setType(type);
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//int lengthm = AMEFResources.byteArrayToInt(buffer,position,3);
+			//jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 4, value, 0, lengthm);
+			position += 3;
+			while(position<buffer.length)
+			{
+				addPrimitive(jDBObject, buffer, position,ignoreName);
+				position = jDBObject.position;
+			}
+			if(names!=null)jDBObject.setName(names);
+		}
+		else if(type==AMEFObject.OBJECT_TYPE)
+		{	
+			String names = null;
+			jDBObject = new AMEFObject();
+			//jDBObject.setType(type);
+			if(!ignoreName)
+			{
+				while(buffer[position++]!=44){}
+				int st = position;
+				while(buffer[position++]!=44){}
+				int en = position - 1;
+				byte[] name = new byte[en - st];
+				System.arraycopy(buffer, st, name, 0, name.length);
+				names = new String(name);
+			}
+			else
+				position++;
+			//int lengthm = AMEFResources.byteArrayToInt(buffer,position,4);
+			//jDBObject.setLength(lengthm);
+			//byte[] value = new byte[lengthm];
+			//System.arraycopy(buffer, 5, value, 0, lengthm);
+			position += 4;
+			while(position<buffer.length)
+			{
+				addPrimitive(jDBObject, buffer, position,ignoreName);
+				position = jDBObject.position;
+			}
+			if(names!=null)jDBObject.setName(names);
+		}
+		jDBObject.position = position;
 		return jDBObject;
 	}
 	

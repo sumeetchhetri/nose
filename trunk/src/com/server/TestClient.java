@@ -55,10 +55,10 @@ import javax.tools.ToolProvider;
 import com.Temp;
 import com.amef.AMEFDecodeException;
 import com.amef.AMEFEncodeException;
-import com.amef.JDBEncoder;
-import com.amef.JDBObject;
+import com.amef.AMEFEncoder;
+import com.amef.AMEFObject;
 import com.jdb.JdbNewDR;
-import com.jdb.JdbResources;
+import com.amef.AMEFResources;
 import com.jdb.Reader;
 
 public final class TestClient
@@ -102,11 +102,11 @@ public final class TestClient
 		}		
 		public void beginTransaction()
 		{			
-			JDBObject query = new JDBObject();
+			AMEFObject query = new AMEFObject();
 			query.addPacket("start transaction");			
 			try
 			{
-				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 				query = null;
 				ByteBuffer buf = ByteBuffer.allocate(data.length);
 				buf.put(data);
@@ -163,9 +163,9 @@ public final class TestClient
 					else
 						System.out.println("Updated failed");
 				}
-				JDBObject query = new JDBObject();
+				AMEFObject query = new AMEFObject();
 				query.addPacket("commit");
-				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 				query = null;
 				ByteBuffer buf = ByteBuffer.allocate(data.length);
 				buf.put(data);
@@ -194,10 +194,10 @@ public final class TestClient
 		private void singleInsert(String table,byte[] dat) throws AMEFEncodeException
 		{
 			reader.reset1();
-			JDBObject query = new JDBObject();
+			AMEFObject query = new AMEFObject();
 			query.addPacket("insert into "+mappikt.get(table)+" values(2,'ssd')");
 			query.addPacket(dat);
-			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 			query = null;
 			ByteBuffer buf = ByteBuffer.allocate(data.length);
 			buf.put(data);
@@ -236,7 +236,7 @@ public final class TestClient
 						int lim = qsize/factor,rem=qsize%factor;
 						for (int j = 0; j < lim; j++)
 						{
-							JDBObject query = new JDBObject();
+							AMEFObject query = new AMEFObject();
 							query.addPacket("insert into "+mappikt.get(entry.getKey())+" values(2,'ssd')");
 							ByteBuffer buffe = ByteBuffer.allocate(trxObjLens.get(entry.getKey()));
 							//for (int i = lim*factor; i < lim*factor+rem; i++)
@@ -247,7 +247,7 @@ public final class TestClient
 							}
 							buffe.flip();
 							query.addPacket(buffe.array());
-							byte[] data = JdbResources.getEncoder().encodeB(query, false);
+							byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 							query = null;
 							ByteBuffer buf = ByteBuffer.allocate(data.length);
 							buf.put(data);
@@ -274,7 +274,7 @@ public final class TestClient
 						}
 						if(rem>0)
 						{
-							/*JDBObject query = new JDBObject();
+							/*AMEFObject query = new AMEFObject();
 							query.addPacket("insert into "+mappikt.get(entry.getKey())+" values(2,'ssd')");*/
 							ByteBuffer buffe = ByteBuffer.allocate(trxObjLens.get(entry.getKey()));
 							while(qsize>0)
@@ -286,7 +286,7 @@ public final class TestClient
 							singleInsert(entry.getKey(), buffe.array());
 							trxObjLens.put(entry.getKey(), trxObjLens.get(entry.getKey())-buffe.limit());
 							/*query.addPacket(buffe.array());
-							byte[] data = JdbResources.getEncoder().encodeB(query, false);
+							byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 							query = null;
 							ByteBuffer buf = ByteBuffer.allocate(data.length);
 							buf.put(data);
@@ -320,11 +320,11 @@ public final class TestClient
 			if(!trans)
 				return;
 			trxObjs = null;
-			JDBObject query = new JDBObject();
+			AMEFObject query = new AMEFObject();
 			query.addPacket("rollback");			
 			try
 			{
-				byte[] data = JdbResources.getEncoder().encodeB(query, false);
+				byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 				query = null;
 				ByteBuffer buf = ByteBuffer.allocate(data.length);
 				buf.put(data);
@@ -353,15 +353,15 @@ public final class TestClient
 		@SuppressWarnings("unchecked")
 		public void save(Object object) throws Exception
 		{
-			/*JDBObject row = getRow(object);
+			/*AMEFObject row = getRow(object);
 			System.out.println(getRowValue(object));
 			row.addPacket("11-12-2010 12:12:12");
 			row.addPacket(true);
 			row.addPacket('Y');*/
 			String table = object.getClass().toString().replaceFirst("class ", "");	
-			JDBObject objj = (JDBObject)getJDBObject(object);
+			AMEFObject objj = (AMEFObject)getAMEFObject(object);
 			if(objj==null){System.out.println("Severe exception");System.exit(0);}
-			byte[] dat = new JDBEncoder().encodeWL(objj, true);//getRowValue(object);
+			byte[] dat = new AMEFEncoder().encodeWL(objj, true);//getRowValue(object);
 			if(!trans)
 			{
 				singleInsert(table, dat);
@@ -382,11 +382,11 @@ public final class TestClient
 		public void update(Object object) throws Exception
 		{
 			String table = object.getClass().toString().replaceFirst("class ", "");
-			byte[] dat = JdbResources.getEncoder().encodeB(getUpdateRow(object),false);
-			JDBObject query = new JDBObject();
+			byte[] dat = AMEFResources.getEncoder().encodeB(getUpdateRow(object),false);
+			AMEFObject query = new AMEFObject();
 			query.addPacket("update temp1 set id=22 where id=13");
 			query.addPacket(dat);
-			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 			if(trans)
 			{
 				updates.add(data);
@@ -420,9 +420,9 @@ public final class TestClient
 		public List select() throws Exception
 		{
 			List objects = new LinkedList();
-			JDBObject query = new JDBObject();
+			AMEFObject query = new AMEFObject();
 			query.addPacket("select * from temp1");
-			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 			ByteBuffer buf = ByteBuffer.allocate(data.length);
 			buf.put(data);
 			buf.flip();
@@ -454,9 +454,9 @@ public final class TestClient
 		public RowObject selectf(boolean flag) throws Exception
 		{
 			RowObject object = null;
-			JDBObject query = new JDBObject();
+			AMEFObject query = new AMEFObject();
 			query.addPacket("select * from temp1");
-			byte[] data = JdbResources.getEncoder().encodeB(query, false);
+			byte[] data = AMEFResources.getEncoder().encodeB(query, false);
 			ByteBuffer buf = ByteBuffer.allocate(data.length);
 			buf.put(data);
 			buf.flip();
@@ -531,16 +531,16 @@ public final class TestClient
 	{
 		try
 		{
-			int val = JdbResources.byteArrayToInt(new byte[]{-113});
-			System.out.println(JdbResources.intToByteArrayS(val, 1));
+			int val = AMEFResources.byteArrayToInt(new byte[]{-113});
+			System.out.println(AMEFResources.intToByteArrayS(val, 1));
 			//System.out.println(val);
-			//byte[] rt = JdbResources.intToByteArrayS(val, 1).getBytes();
-			//System.out.println(JdbResources.byteArrayToInt(rt));
+			//byte[] rt = AMEFResources.intToByteArrayS(val, 1).getBytes();
+			//System.out.println(AMEFResources.byteArrayToInt(rt));
 			Integer ie = -113;
 			System.out.println(Integer.toHexString(ie));
 			for (int i = -128; i < 129; i++)
 			{
-				//System.out.println((char)i + " -> " + i + " -> " + JdbResources.byteArrayToInt(JdbResources.intToByteArrayS(i,1).getBytes()));
+				//System.out.println((char)i + " -> " + i + " -> " + AMEFResources.byteArrayToInt(AMEFResources.intToByteArrayS(i,1).getBytes()));
 			}
 			mappik.put("class", "com.Temp");
 			mappik.put("id", "id");
@@ -567,13 +567,13 @@ public final class TestClient
 			initializeRM(mappiktt);
 			
 			JdbNewDR reader = new JdbNewDR();
-			JdbResources.getDecoder();
-			JdbResources.getEncoder();
+			AMEFResources.getDecoder();
+			AMEFResources.getEncoder();
 			SocketChannel sock = null;//SocketChannel.open(new InetSocketAddress("localhost",7001));
 			//sock.configureBlocking(false);
 			//sock.socket().setReceiveBufferSize(100240000);
 			//sock.configureBlocking(false);
-			JDBObject object = new JDBObject();
+			AMEFObject object = new AMEFObject();
 			object.addPacket(13);
 			object.addPacket("saumil");
 			object.addPacket("11-12-2010 12:12:12");
@@ -610,7 +610,7 @@ public final class TestClient
 			
 			/*long st1 = System.currentTimeMillis();stt=st1;
 			String query1 = "select * from temp1";
-			List<JDBObject> data = execute(query1,sock,true,reader);	
+			List<AMEFObject> data = execute(query1,sock,true,reader);	
 			System.out.println("Time reqd for selects = "+(System.currentTimeMillis()-st1)+"\n");
 			
 			st1 = System.currentTimeMillis();stt=st1;
@@ -637,7 +637,7 @@ public final class TestClient
 			bulkexecute(query, sock, objt, reader);
 			long st1 = System.currentTimeMillis();stt=st1;
 			String query1 = "select * from temp1";
-			List<JDBObject> data = execute(query1,sock,true,reader);
+			List<AMEFObject> data = execute(query1,sock,true,reader);
 			System.out.println("Time reqd for inserts = "+(st1-st)+"\nTime for recv resp = "+tim);	
 			//System.out.println("Time reqd for selects = "+(System.currentTimeMillis()-st1)+"\n");*/
 		}
@@ -654,7 +654,7 @@ public final class TestClient
 	{
 		StringBuffer build = new StringBuffer();
 		build.append("\n\npublic class runtime_"+mappikt2.get("class").replaceAll("\\.", "_")+"\n{\n");
-		build.append("\tpublic "+mappikt2.get("class")+" getObject(com.amef.JDBObject obh)\n\t{\n\t\tint i=0;\n\t\t"+
+		build.append("\tpublic "+mappikt2.get("class")+" getObject(com.amef.AMEFObject obh)\n\t{\n\t\tint i=0;\n\t\t"+
 				"if(obh==null || obh.getPackets().size()==1)return null;\n\t\t" +
 				mappikt2.get("class")+" _object = new "+mappikt2.get("class")+"();\n");
 		for (Iterator<Map.Entry<String,String>> iter = mappikt2.entrySet().iterator(); iter.hasNext();)
@@ -671,13 +671,13 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(!obh.getPackets().get(i).isNullNumber())_object.set"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"(com.jdb.JdbResources.byteArrayToInt(obh.getPackets().get(i++).getValue()));\n");
+							"(com.jdb.AMEFResources.byteArrayToInt(obh.getPackets().get(i++).getValue()));\n");
 				}
 				else if((entry.getValue().equals("long") || entry.getValue().equals("java.lang.Long"))
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(!obh.getPackets().get(i).isNullNumber())_object.set"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-					"(com.jdb.JdbResources.byteArrayToLong(obh.getPackets().get(i++).getValue()));\n");
+					"(com.jdb.AMEFResources.byteArrayToLong(obh.getPackets().get(i++).getValue()));\n");
 				}
 				else if((entry.getValue().equals("double") || entry.getValue().equals("java.lang.Double"))
 						/* && mappi.get(entry.getKey())!=null*/)
@@ -753,9 +753,9 @@ public final class TestClient
 	{
 		StringBuffer build = new StringBuffer();
 		build.append("\n\npublic class runtimerm_"+mappikt2.get("class").replaceAll("\\.", "_")+"\n{\n");
-		build.append("\tpublic com.amef.JDBObject getObject("+mappikt2.get("class")+" obh)\n\t{\n\t\tint i=0;\n\t\t"+
+		build.append("\tpublic com.amef.AMEFObject getObject("+mappikt2.get("class")+" obh)\n\t{\n\t\tint i=0;\n\t\t"+
 				"if(obh==null)return null;\n\t\t" +
-				"com.amef.JDBObject _object = new com.amef.JDBObject();\n");
+				"com.amef.AMEFObject _object = new com.amef.AMEFObject();\n");
 		for (Iterator<Map.Entry<String,String>> iter = mappikt2.entrySet().iterator(); iter.hasNext();)
 		{
 			Map.Entry<String,String> entry = iter.next();
@@ -764,7 +764,7 @@ public final class TestClient
 				if(entry.getValue().equals("java.lang.String"))
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_STRING);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_STRING);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -772,7 +772,7 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_NUMBER);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_NUMBER);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -787,7 +787,7 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_NUMBER);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_NUMBER);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -802,7 +802,7 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_FPN);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_FPN);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -817,7 +817,7 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_FPN);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_FPN);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -825,7 +825,7 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(obh.get"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"()==null) _object.addNullPacket(com.amef.JDBObject.NULL_CHAR);\n\t\telse _object.addPacket(obh.get"
+							"()==null) _object.addNullPacket(com.amef.AMEFObject.NULL_CHAR);\n\t\telse _object.addPacket(obh.get"
 							+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
 							"());\n");
 				}
@@ -896,13 +896,13 @@ public final class TestClient
 		}
 	}
 	
-	public static Object getObject(JDBObject obh)
+	public static Object getObject(AMEFObject obh)
 	{
 		try
 		{
 			Class clz = loader.loadClass("runtime_"+mappiktt.get("class").replaceAll("\\.", "_"));		
 			Object ins = clz.newInstance();
-			Method meth = clz.getMethod("getObject", new Class[]{JDBObject.class});
+			Method meth = clz.getMethod("getObject", new Class[]{AMEFObject.class});
 			Object obj = meth.invoke(ins, new Object[]{obh});
 			return obj;
 		}
@@ -912,7 +912,7 @@ public final class TestClient
 		return null;
 	}
 	
-	public static Object getJDBObject(Object obh)
+	public static Object getAMEFObject(Object obh)
 	{
 		try
 		{
@@ -930,9 +930,9 @@ public final class TestClient
 	}
 
 
-	protected static List<JDBObject> getAMEFObjects(byte[] data1)
+	protected static List<AMEFObject> getAMEFObjects(byte[] data1)
 	{
-		List<JDBObject> objects = new ArrayList<JDBObject>();
+		List<AMEFObject> objects = new ArrayList<AMEFObject>();
 		try
 		{
 			InputStream jdbin = new ByteArrayInputStream(data1);
@@ -944,7 +944,7 @@ public final class TestClient
 								| ((length[2] & 0xff) << 8) | ((length[3] & 0xff));
 				byte[] data = new byte[lengthm];
 				jdbin.read(data);
-				objects.add(JdbResources.getDecoder().decodeB(data, false, false));
+				objects.add(AMEFResources.getDecoder().decodeB(data, false, false));
 			}
 		}
 		catch (IOException e)
@@ -962,9 +962,9 @@ public final class TestClient
 	private static boolean bulkexecute(String query,SocketChannel sock,List<Object> obrows, JdbDataReader reader) throws Exception
 	{	
 		reader.reset();
-		List<JDBObject> rows = getRows(obrows);
-		JDBObject quer = buildQuery(query,rows);
-		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		List<AMEFObject> rows = getRows(obrows);
+		AMEFObject quer = buildQuery(query,rows);
+		byte[] data = AMEFResources.getEncoder().encodeB(quer, false);
 		ByteBuffer buf = ByteBuffer.allocate(data.length);
 		buf.put(data);
 		buf.flip();
@@ -995,12 +995,12 @@ public final class TestClient
 	{			
 		reader.reset();		
 		DMLResReader dmlRead = new DMLResReader(reader,sock);	
-		JDBObject row = getRow(obj);
+		AMEFObject row = getRow(obj);
 		row.addPacket("11-12-2010 12:12:12");
 		row.addPacket(true);
 		row.addPacket('Y');
-		JDBObject quer = buildQuerys(query,row);
-		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		AMEFObject quer = buildQuerys(query,row);
+		byte[] data = AMEFResources.getEncoder().encodeB(quer, false);
 		ByteBuffer buf = ByteBuffer.allocate(data.length);
 		buf.put(data);
 		buf.flip();
@@ -1031,9 +1031,9 @@ public final class TestClient
 		return false;
 	}
 	
-	private static List<JDBObject> getRows(List<Object> obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	private static List<AMEFObject> getRows(List<Object> obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
 	{
-		List<JDBObject> rows = new ArrayList<JDBObject>();
+		List<AMEFObject> rows = new ArrayList<AMEFObject>();
 		for (Object object : obj)
 		{
 			rows.add(getRow(object));
@@ -1041,10 +1041,10 @@ public final class TestClient
 		return rows;
 	}
 	
-	private static JDBObject getRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	private static AMEFObject getRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
 	{
 		String clz = obj.getClass().toString().replaceFirst("class ", "");
-		JDBObject obja =  new JDBObject();		
+		AMEFObject obja =  new AMEFObject();		
 		if(mappik.containsValue(clz))
 		{
 			Class claz = Class.forName(clz);
@@ -1087,10 +1087,10 @@ public final class TestClient
 		return obja;
 	}
 	
-	private static JDBObject getUpdateRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
+	private static AMEFObject getUpdateRow(Object obj) throws ClassNotFoundException, IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException
 	{
 		String clz = obj.getClass().toString().replaceFirst("class ", "");
-		JDBObject obja =  new JDBObject();		
+		AMEFObject obja =  new AMEFObject();		
 		if(mappik.containsValue(clz))
 		{
 			Class claz = Class.forName(clz);
@@ -1149,49 +1149,49 @@ public final class TestClient
 					Field prop = claz.getDeclaredField(entry.getValue());
 					if(prop.getType().toString().equals("class java.lang.String"))
 					{
-						if(prop.get(obj)!=null) arrr[pos++] = JdbResources.getEncoder().getPacketValue((String)prop.get(obj));
+						if(prop.get(obj)!=null) arrr[pos++] = AMEFResources.getEncoder().getPacketValue((String)prop.get(obj));
 						else arrr[pos++] = new byte[]{'t',0x00};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("int") 
 							|| prop.getType().toString().equals("class java.lang.Integer"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Integer)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Integer)prop.get(obj));
 						else arrr[pos++] = new byte[]{'n',0x00};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("long") 
 							|| prop.getType().toString().equals("class java.lang.Long"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Long)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Long)prop.get(obj));
 						else arrr[pos++] = new byte[]{'n',0x00};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("double") 
 							|| prop.getType().toString().equals("class java.lang.Double"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Double)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Double)prop.get(obj));
 						else arrr[pos++] = new byte[]{'t',0x00};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("float") 
 							|| prop.getType().toString().equals("class java.lang.Float"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Float)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Float)prop.get(obj));
 						else arrr[pos++] = new byte[]{'t',0x00};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("boolean") 
 							|| prop.getType().toString().equals("class java.lang.Boolean"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Boolean)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Boolean)prop.get(obj));
 						else arrr[pos++] = new byte[]{'b','0'};
 						alllen += arrr[pos-1].length;
 					}
 					else if(prop.getType().toString().equals("char") 
 							|| prop.getType().toString().equals("class java.lang.Character"))
 					{
-						if(prop.get(obj)!=null)arrr[pos++] = JdbResources.getEncoder().getPacketValue((Character)prop.get(obj));
+						if(prop.get(obj)!=null)arrr[pos++] = AMEFResources.getEncoder().getPacketValue((Character)prop.get(obj));
 						else arrr[pos++] = new byte[]{'c','0'};
 						alllen += arrr[pos-1].length;
 					}
@@ -1203,30 +1203,30 @@ public final class TestClient
 		if(alllen<256)
 		{
 			fin = new byte[alllen+2];
-			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
-			byte[] len = JdbResources.longToByteArray(alllen, 1);
+			fin[0] = (byte)AMEFObject.VS_OBJECT_TYPE;
+			byte[] len = AMEFResources.longToByteArray(alllen, 1);
 			System.arraycopy(len, 0, fin, 1, len.length);
 			pos = 2;
 		}
 		else if(alllen<65536)
 		{
 			fin = new byte[alllen+3];
-			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
-			byte[] len = JdbResources.longToByteArray(alllen, 2);
+			fin[0] = (byte)AMEFObject.VS_OBJECT_TYPE;
+			byte[] len = AMEFResources.longToByteArray(alllen, 2);
 			System.arraycopy(len, 0, fin, 1, len.length);pos = 3;
 		}
 		else if(alllen<16777216)
 		{
 			fin = new byte[alllen+4];
-			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
-			byte[] len = JdbResources.longToByteArray(alllen, 3);
+			fin[0] = (byte)AMEFObject.VS_OBJECT_TYPE;
+			byte[] len = AMEFResources.longToByteArray(alllen, 3);
 			System.arraycopy(len, 0, fin, 1, len.length);pos = 4;
 		}
 		else
 		{
 			fin = new byte[alllen+5];
-			fin[0] = (byte)JDBObject.VS_OBJECT_TYPE;
-			byte[] len = JdbResources.longToByteArray(alllen, 4);pos = 4;
+			fin[0] = (byte)AMEFObject.VS_OBJECT_TYPE;
+			byte[] len = AMEFResources.longToByteArray(alllen, 4);pos = 4;
 			System.arraycopy(len, 0, fin, 1, len.length);
 		}
 		for (int i = 0; i < arrr.length; i++)
@@ -1287,10 +1287,10 @@ public final class TestClient
 				
 				//System.out.println(i++);
 			}
-			/*JDBObject amef = new JDBObject();
+			/*AMEFObject amef = new AMEFObject();
 			amef.setName("DONE");
 			amef.addPacket(true);
-			String dat = JdbResources.getEncoder().encodeS(amef, false);
+			String dat = AMEFResources.getEncoder().encodeS(amef, false);
 			dat = dat.substring(4);*/
 			maker.addToQ(new byte[]{'F'});
 			System.out.println("Time to finish reader task ="+( System.currentTimeMillis() -st));
@@ -1405,7 +1405,7 @@ public final class TestClient
 		{
 			long st = System.currentTimeMillis();
 			byte[] data = null;
-			JDBObject tabDet = null;
+			AMEFObject tabDet = null;
 			int num = 2;
 			String claz = mappik.get("class");
 			Class clas = null;
@@ -1431,24 +1431,24 @@ public final class TestClient
 					int lengthm = 0;					
 					if(num<=1)
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter, 4);
+						lengthm = AMEFResources.byteArrayToInt(data, cnter, 4);
 						cnter += 4;
 					}
 					else if(data[cnter]=='m')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 1) + 2;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 1) + 2;
 					}
 					else if(data[cnter]=='q')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 2) + 3;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 2) + 3;
 					}
 					else if(data[cnter]=='p')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 3) + 4;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 3) + 4;
 					}
 					else if(data[cnter]=='o')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 4) + 5;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 4) + 5;
 					}
 					else if(data[cnter]=='F')
 					{
@@ -1461,12 +1461,12 @@ public final class TestClient
 					System.arraycopy(data, cnter, interdata, 0, lengthm);
 					cnter+=(lengthm);
 					
-					JDBObject obh = null;
+					AMEFObject obh = null;
 					long st1 = System.currentTimeMillis();
 					if(num<=1)
 					{
 						try {
-							obh = JdbResources.getDecoder().decodeB(interdata, false, false);
+							obh = AMEFResources.getDecoder().decodeB(interdata, false, false);
 						} catch (AMEFDecodeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -1475,7 +1475,7 @@ public final class TestClient
 					else
 					{
 						try {
-							obh = JdbResources.getDecoder().decodeB(interdata, false, true);
+							obh = AMEFResources.getDecoder().decodeB(interdata, false, true);
 						} catch (AMEFDecodeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -1550,7 +1550,7 @@ public final class TestClient
 			ByteBuffer buffl = null; 
 			long st = System.currentTimeMillis();
 			byte[] data = null;
-			JDBObject tabDet = null;
+			AMEFObject tabDet = null;
 			int num = 2;
 			String claz = mappik.get("class");
 			Class clas = null;
@@ -1574,24 +1574,24 @@ public final class TestClient
 					int lengthm = 0;					
 					if(num<=1)
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter, 4);
+						lengthm = AMEFResources.byteArrayToInt(data, cnter, 4);
 						cnter += 4;
 					}
 					else if(data[cnter]=='m')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 1) + 2;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 1) + 2;
 					}
 					else if(data[cnter]=='q')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 2) + 3;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 2) + 3;
 					}
 					else if(data[cnter]=='p')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 3) + 4;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 3) + 4;
 					}
 					else if(data[cnter]=='o')
 					{
-						lengthm = JdbResources.byteArrayToInt(data, cnter+1, 4) + 5;
+						lengthm = AMEFResources.byteArrayToInt(data, cnter+1, 4) + 5;
 					}
 					else if(data[cnter]=='F')
 					{
@@ -1605,15 +1605,15 @@ public final class TestClient
 					rowObject.addIndex(rowObject.datasize()-1, cnter, lengthm);
 					cnter+=(lengthm);
 					
-					/*JDBObject obh = null;
+					/*AMEFObject obh = null;
 					long st1 = System.currentTimeMillis();
 					if(num<=1)
 					{
-						obh = JdbResources.getDecoder().decodeB(interdata, false, false);						
+						obh = AMEFResources.getDecoder().decodeB(interdata, false, false);						
 					}
 					else
 					{
-						obh = JdbResources.getDecoder().decodeB(interdata, false, true);
+						obh = AMEFResources.getDecoder().decodeB(interdata, false, true);
 					}ttim += System.currentTimeMillis() - st1; 
 					
 					
@@ -1653,15 +1653,15 @@ public final class TestClient
 	
 	static class JdbAMEFObjMakef1 implements Callable
 	{
-		private ConcurrentLinkedQueue<JDBObject> q;
+		private ConcurrentLinkedQueue<AMEFObject> q;
 		public boolean done = false;
 		private List objects = null;
 		public JdbAMEFObjMakef1()
 		{
-			q = new ConcurrentLinkedQueue<JDBObject>();
+			q = new ConcurrentLinkedQueue<AMEFObject>();
 			objects = new LinkedList();
 		}
-		public void addToQ(JDBObject data)
+		public void addToQ(AMEFObject data)
 		{
 			q.add(data);
 		}
@@ -1669,8 +1669,8 @@ public final class TestClient
 		{
 			
 			long st = System.currentTimeMillis();
-			JDBObject data = null;
-			JDBObject tabDet = null;
+			AMEFObject data = null;
+			AMEFObject tabDet = null;
 			int num = 0;
 			String claz = mappik.get("class");
 			Class clas = null;
@@ -1718,7 +1718,7 @@ public final class TestClient
 		{
 			long st = System.currentTimeMillis();
 			byte[] data = null;
-			JDBObject tabDet = null;
+			AMEFObject tabDet = null;
 			int num = 0;
 			String claz = mappik.get("class");
 			Class clas = null;
@@ -1733,11 +1733,11 @@ public final class TestClient
 				{
 					Thread.sleep(0,1);
 				}
-				JDBObject obh = null;
+				AMEFObject obh = null;
 				if(num<=1)
-					obh = JdbResources.getDecoder().decodeB(data, false, false);
+					obh = AMEFResources.getDecoder().decodeB(data, false, false);
 				else if(!(data.length==1 && data[0]=='F'))
-					obh = JdbResources.getDecoder().decodeB(data, false, true);
+					obh = AMEFResources.getDecoder().decodeB(data, false, true);
 				else
 					break outer;
 				if(num==0)//obh.getName().equals("TABLE_COLUMN_DET"))
@@ -1745,7 +1745,7 @@ public final class TestClient
 					if(tabDet==null)
 					{
 						tabDet = obh;	
-						/*for (JDBObject b: tabDet.getPackets())
+						/*for (AMEFObject b: tabDet.getPackets())
 						{
 							build.append(b.getName()+"\t");
 						}
@@ -1757,9 +1757,9 @@ public final class TestClient
 				{
 					/*if(mapping==null)
 					{
-						JDBObject tabDet1 = obh;
+						AMEFObject tabDet1 = obh;
 						mapping = new HashMap<String, String>();
-						for (JDBObject b: tabDet1.getPackets())
+						for (AMEFObject b: tabDet1.getPackets())
 						{
 							mapping.put(b.getNameStr(),new String(b.getValue()));
 						}
@@ -1768,7 +1768,7 @@ public final class TestClient
 				}
 				else
 				{					
-					/*for (JDBObject b: obh.getPackets())
+					/*for (AMEFObject b: obh.getPackets())
 					{
 						build.append(b.getValue()+"\t");
 					}
@@ -1789,16 +1789,16 @@ public final class TestClient
 	{	
 		reader.reset4();
 		List objects = new LinkedList();
-		JDBObject quer = buildQuery(query,null);
+		AMEFObject quer = buildQuery(query,null);
 		//System.out.println("time reqd for 1 init = "+(System.currentTimeMillis()-stt));
-		byte[] data = JdbResources.getEncoder().encodeB(quer, false);
+		byte[] data = AMEFResources.getEncoder().encodeB(quer, false);
 		//System.out.println("time reqd for init = "+(System.currentTimeMillis()-stt));
 		ByteBuffer buf = ByteBuffer.allocate(data.length);
 		buf.put(data);
 		buf.flip();
 		int num = 0;
 		//StringBuilder build = new StringBuilder();
-		JDBObject tabDet = null;
+		AMEFObject tabDet = null;
 		long rdtim = 0,odtim = 0;
 		try
 		{
@@ -1842,10 +1842,10 @@ public final class TestClient
 					rdtim += (rdent-rdst);
 					num++;
 					long ost = System.currentTimeMillis();
-					JDBObject obh = JdbResources.getDecoder().decode(data, false, false);
+					AMEFObject obh = AMEFResources.getDecoder().decode(data, false, false);
 					if(obh.getName().equals(""))
 					{					
-						for (JDBObject b: obh.getPackets())
+						for (AMEFObject b: obh.getPackets())
 						{
 							build.append(b.getValue()+"\t");
 						}
@@ -1860,7 +1860,7 @@ public final class TestClient
 						if(tabDet==null)
 						{
 							tabDet = obh;	
-							for (JDBObject b: tabDet.getPackets())
+							for (AMEFObject b: tabDet.getPackets())
 							{
 								build.append(b.getName()+"\t");
 							}
@@ -1872,9 +1872,9 @@ public final class TestClient
 					{
 						if(mapping==null)
 						{
-							JDBObject tabDet1 = obh;
+							AMEFObject tabDet1 = obh;
 							mapping = new HashMap<String, String>();
-							for (JDBObject b: tabDet1.getPackets())
+							for (AMEFObject b: tabDet1.getPackets())
 							{
 								mapping.put(b.getName(),b.getValue());
 							}
@@ -1898,7 +1898,7 @@ public final class TestClient
 		//System.out.println(build.toString()+"\nSize of objects = "+(num-1));
 		return objects;
 	}
-	private static Object buildObject(JDBObject obh,Class clas)
+	private static Object buildObject(AMEFObject obh,Class clas)
 	{
 		Object instance = null;
 		//String claz = mappik.get("class");
@@ -1919,12 +1919,12 @@ public final class TestClient
 					else if((f.getType().toString().equals("int") || f.getType().toString().equals("class java.lang.Integer"))
 							/* && mappi.get(entry.getKey())!=null*/)
 					{
-						f.set(instance, JdbResources.byteArrayToInt(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
+						f.set(instance, AMEFResources.byteArrayToInt(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
 					}
 					else if((f.getType().toString().equals("long") || f.getType().toString().equals("class java.lang.Long"))
 							/* && mappi.get(entry.getKey())!=null*/)
 					{
-						f.set(instance, JdbResources.byteArrayToLong(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
+						f.set(instance, AMEFResources.byteArrayToLong(obh.getPackets().get(mappi.get(entry.getKey())).getValue()));
 					}
 					else if((f.getType().toString().equals("double") || f.getType().toString().equals("class java.lang.Double"))
 							/* && mappi.get(entry.getKey())!=null*/)
@@ -1984,7 +1984,7 @@ public final class TestClient
 	}
 	static Map<String,Integer> mappi =  new HashMap<String, Integer>();
 	static Map<String,String> mapping = null;
-	private static void initializeMapping(JDBObject tabdet)
+	private static void initializeMapping(AMEFObject tabdet)
 	{
 		for (int i = 0; i < tabdet.getPackets().size(); i++)
 		{
@@ -1992,7 +1992,7 @@ public final class TestClient
 		}
 	}
 	
-	private static boolean evaluate(JDBObject tabdet,JDBObject objec)
+	private static boolean evaluate(AMEFObject tabdet,AMEFObject objec)
 	{
 		if(whrandcls.size()==0)
 			return true;
@@ -2048,20 +2048,20 @@ public final class TestClient
 		return false;
 	}
 	
-	private static JDBObject buildQuerys(String query,JDBObject row) throws Exception
+	private static AMEFObject buildQuerys(String query,AMEFObject row) throws Exception
 	{
-		JDBObject object = new JDBObject();
+		AMEFObject object = new AMEFObject();
 		object.addPacket(query);
 		if(query.indexOf("insert ")!=-1)
 		{
-			object.addPacket(JdbResources.getEncoder().encodeB(row, false),"values");
+			object.addPacket(AMEFResources.getEncoder().encodeB(row, false),"values");
 		}
 		return object;
 	}
 	
-	private static JDBObject buildQuery(String query,List<JDBObject> row) throws Exception
+	private static AMEFObject buildQuery(String query,List<AMEFObject> row) throws Exception
 	{
-		JDBObject object = new JDBObject();
+		AMEFObject object = new AMEFObject();
 		object.addPacket(query);
 		if(query.indexOf("insert ")!=-1)
 		{
@@ -2090,7 +2090,7 @@ public final class TestClient
 			object.addPacket(qparts[2].trim(), "table");*/
 			for (int i = 0; i < row.size(); i++)
 			{
-				object.addPacket(JdbResources.getEncoder().encodeB(row.get(i), false),"values");
+				object.addPacket(AMEFResources.getEncoder().encodeB(row.get(i), false),"values");
 			}			
 		}
 		/*else if(query.indexOf("select ")!=-1)

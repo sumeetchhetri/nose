@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Queue;
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
 
 public final class JdbSearcher implements Runnable
 {
@@ -33,11 +33,11 @@ public final class JdbSearcher implements Runnable
 	private Queue<Object> q;
 	private Table table;
 	private int index;
-	private JDBObject objtab;
+	private AMEFObject objtab;
 	boolean isMemoryDB,distinct,one,aggr;
 	String[] qparts;
 	public JdbSearcher(String subq, Queue<Object> q, Table table,
-			int index, JDBObject objtab,boolean isMemoryDB, 
+			int index, AMEFObject objtab,boolean isMemoryDB, 
 			String[] qparts, boolean distinct, boolean one, boolean aggr, String grpbycol)
 	{
 		super();

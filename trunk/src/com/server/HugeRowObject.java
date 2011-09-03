@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.amef.AMEFDecodeException;
-import com.amef.JDBObject;
-import com.jdb.JdbResources;
+import com.amef.AMEFObject;
+import com.amef.AMEFResources;
 
 @SuppressWarnings({"rawtypes","unchecked"})
 public final class HugeRowObject implements RowObject
@@ -89,9 +89,9 @@ public final class HugeRowObject implements RowObject
 						}
 						byte[] interdata = new byte[data.length];
 						System.arraycopy(objects.get(data.i), data.j, interdata, 0, data.length);
-						JDBObject obh = null;
+						AMEFObject obh = null;
 						try {
-							obh = JdbResources.getDecoder().decodeB(interdata, false, true);
+							obh = AMEFResources.getDecoder().decodeB(interdata, false, true);
 							acObjects.add(TestClient.getObject(obh));
 						} catch (AMEFDecodeException e) {
 							e.printStackTrace();

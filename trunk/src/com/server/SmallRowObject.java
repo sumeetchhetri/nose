@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.amef.AMEFDecodeException;
-import com.amef.JDBObject;
-import com.jdb.JdbResources;
+import com.amef.AMEFObject;
+import com.amef.AMEFResources;
 
 public final class SmallRowObject implements RowObject
 {
@@ -27,9 +27,9 @@ public final class SmallRowObject implements RowObject
 	{
 		byte[] interdata = new byte[indexes.get(index).length];
 		System.arraycopy(objects.get(indexes.get(index).i), indexes.get(index).j, interdata, 0, indexes.get(index).length);
-		JDBObject obh = null;
+		AMEFObject obh = null;
 		try {
-			obh = JdbResources.getDecoder().decodeB(interdata, false, true);
+			obh = AMEFResources.getDecoder().decodeB(interdata, false, true);
 			return TestClient.getObject(obh);
 		} catch (AMEFDecodeException e) {
 			e.printStackTrace();

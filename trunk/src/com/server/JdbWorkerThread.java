@@ -29,10 +29,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
 import com.jdb.BulkConnection;
 import com.jdb.ConnectionManager;
-import com.jdb.JdbResources;
+import com.amef.AMEFResources;
 
 public final class JdbWorkerThread implements Runnable
 {
@@ -67,13 +67,13 @@ public final class JdbWorkerThread implements Runnable
 				long st = System.currentTimeMillis();
 				try
 				{		
-					JDBObject query = JdbResources.getDecoder().decodeB(data, false, false);
+					AMEFObject query = AMEFResources.getDecoder().decodeB(data, false, false);
 					String quer = new String(query.getPackets().get(0).getValue());
 					if(quer.indexOf("insert into ")!=-1)
 					{
 						if(trx_file_st!=null)
 						{
-							byte[] len = JdbResources.intToByteArray(data.length, 4);
+							byte[] len = AMEFResources.intToByteArray(data.length, 4);
 							trx_file_st.write(len);
 							trx_file_st.write(data);
 						}
@@ -92,7 +92,7 @@ public final class JdbWorkerThread implements Runnable
 					{
 						if(trx_file_st!=null)
 						{
-							byte[] len = JdbResources.intToByteArray(data.length, 4);
+							byte[] len = AMEFResources.intToByteArray(data.length, 4);
 							trx_file_st.write(len);
 							trx_file_st.write(data);
 						}
@@ -155,7 +155,7 @@ public final class JdbWorkerThread implements Runnable
 									{
 										b.flip();
 										ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length+4);
-										b1.put(JdbResources.intToByteArray(b.limit()+encData.length, 4));
+										b1.put(AMEFResources.intToByteArray(b.limit()+encData.length, 4));
 										
 										//ByteBuffer b1 = ByteBuffer.allocate(b.limit()+encData.length);
 										
@@ -191,7 +191,7 @@ public final class JdbWorkerThread implements Runnable
 							//ByteBuffer buf = ByteBuffer.allocate(b.position());
 							
 							ByteBuffer buf = ByteBuffer.allocate(b.position()+4);
-							buf.put(JdbResources.intToByteArray(b.position(), 4));
+							buf.put(AMEFResources.intToByteArray(b.position(), 4));
 							
 							
 							buf.put(b.array(),0,b.position());
@@ -248,7 +248,7 @@ public final class JdbWorkerThread implements Runnable
 							byte[] data1 = new byte[lengthm];
 							pos += (4 + lengthm);
 							jdbin.read(data1);
-							JDBObject trxquery = JdbResources.getDecoder().decodeB(data1, false, false);
+							AMEFObject trxquery = AMEFResources.getDecoder().decodeB(data1, false, false);
 							String trxquer = new String(trxquery.getPackets().get(0).getValue());
 							if(trxquer.indexOf("insert into ")!=-1)
 							{
@@ -314,7 +314,7 @@ public final class JdbWorkerThread implements Runnable
 		System.out.println("Closed thread");
 	}
 	
-	private void insert(String quer,JDBObject query) throws Exception
+	private void insert(String quer,AMEFObject query) throws Exception
 	{
 		String columns = "",values = "";
 		String subq = quer.substring(quer.indexOf("(")+1,quer.lastIndexOf(")"));
@@ -351,7 +351,7 @@ public final class JdbWorkerThread implements Runnable
 		}
 	}
 	
-	private void update(String quer,JDBObject query) throws Exception
+	private void update(String quer,AMEFObject query) throws Exception
 	{
 		String tablen = quer.substring(quer.indexOf("update ")+7,quer.indexOf(" set "));
 		String subq = quer.indexOf(" where ")!=-1?quer.substring(quer.indexOf(" where ")+7):"";
@@ -360,7 +360,7 @@ public final class JdbWorkerThread implements Runnable
 		if(set.equals(""))
 			return;
 		//String[] qparts = set.split(",");
-		JDBObject querry = JdbResources.getDecoder().decodeB(query.getPackets().get(1).getValue(), true, false);
+		AMEFObject querry = AMEFResources.getDecoder().decodeB(query.getPackets().get(1).getValue(), true, false);
 		Map<String,byte[]> nvalues = new HashMap<String, byte[]>();
 		for (int i = 0; i < querry.getPackets().size(); i++)
 		{

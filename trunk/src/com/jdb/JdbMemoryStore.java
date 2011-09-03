@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
 
 public final class JdbMemoryStore
 {
@@ -52,7 +52,7 @@ public final class JdbMemoryStore
 		/*for (Map.Entry<String,Table> entry : DBManager.getDBManager().databases.get("temp").tables.entrySet())
 		{
 			Queue<Object> q = new ConcurrentLinkedQueue<Object>();
-			JDBObject objtab = new JDBObject();
+			AMEFObject objtab = new AMEFObject();
 			objtab.setName("TABLE_COLUMN_DET");
 			for (int j = 0; j < entry.getValue().getColumnNames().length; j++)
 			{
@@ -63,7 +63,7 @@ public final class JdbMemoryStore
 				InputStream jdbin = new FileInputStream(new File(entry.getValue().getFileName(i)));								
 				entry.getValue().getAMEFObjectsb(q,jdbin,"",objtab);
 			}
-			JDBObject objtab1 = new JDBObject();
+			AMEFObject objtab1 = new AMEFObject();
 			objtab1.setName("TABLE_CLASS_MAP");
 			if(entry.getValue().getMapping()!=null && entry.getValue().getMapping().size()>0)
 			{						
@@ -86,7 +86,7 @@ public final class JdbMemoryStore
 				q.addAll(store.get(tab.getName()).data);
 			return;
 		}
-		JDBObject objtab = new JDBObject();
+		AMEFObject objtab = new AMEFObject();
 		objtab.setName("TABLE_COLUMN_DET");
 		for (int j = 0; j < tab.getColumnNames().length; j++)
 		{
