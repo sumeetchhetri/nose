@@ -208,7 +208,7 @@ public class Test
 			objects1.add(object);
 		}
 		
-		//con.bulkInsert("temp", "temp1",objects1);
+		con.bulkInsert("temp", "temp1",objects1);
 		System.out.println("Time for Indexed Inserts = "+(System.currentTimeMillis()-sti));
 		
 		sti = System.currentTimeMillis();
@@ -401,12 +401,12 @@ public class Test
 		System.out.println("Time required to fetch right joined filtered aliased column joined data = "+(st3-st)+" "+(q.size()));
 			
 		//con.insert("temp", "temp",object);
-		//con.bulkInsert("temp", "temp1",objects1);
+		con.bulkInsert("temp", "temp1",objects1);
 		/*for(int i=0;i<100000;i++)
 		{
 			con.insert("temp", "temp",object);
 		}*/
-		//con.bulkInsert("temp", "temp1",objects1);
+		con.bulkInsert("temp", "temp1",objects1);
 		//con.commit();
 		//System.out.println("Time reqd for bulkinserts = "+(System.currentTimeMillis()-st1));		
 		
