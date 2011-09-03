@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import com.amef.AMEFEncodeException;
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
 import com.server.JdbFlusher;
 
 public class Connection
@@ -74,7 +74,7 @@ public class Connection
 		return selectColumnsWhere(dbname,table,null,where);
 	}
 	
-	public List<JDBObject> selectAMEFObject(String dbname,String tableName,String where)
+	public List<AMEFObject> selectAMEFObject(String dbname,String tableName,String where)
 	{
 		return DBManager.getTable(dbname, tableName).getAMEFObjects();
 	}
@@ -89,13 +89,13 @@ public class Connection
 				try
 				{
 					Table table = DBManager.getTable(dbname, tableName);
-					JDBObject objtab = new JDBObject();
+					AMEFObject objtab = new AMEFObject();
 					for (int i = 0; i < table.getColumnNames().length; i++)
 					{
 						objtab.addPacket(table.getColumnTypes()[i],table.getColumnNames()[i]);
 					}
 					q.add(JdbResources.getEncoder().encode(objtab, false));
-					JDBObject objtab1 = new JDBObject();
+					AMEFObject objtab1 = new AMEFObject();
 					if(table.getMapping()!=null && table.getMapping().size()>0)
 					{						
 						for (Iterator<Map.Entry<String,String>> iter = table.getMapping().entrySet().iterator(); iter.hasNext();)
@@ -144,7 +144,7 @@ public class Connection
 		return selectColumnsWhere(dbname,table,cols,where);
 	}
 	
-	public boolean insert(String dbname,String tableName,JDBObject row)
+	public boolean insert(String dbname,String tableName,AMEFObject row)
 	{
 		Table table = DBManager.getTable(dbname, tableName);
 		table.incRecords();

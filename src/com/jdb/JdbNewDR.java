@@ -18,6 +18,8 @@ package com.jdb;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import com.amef.AMEFResources;
+
 public final class JdbNewDR
 {
 	public JdbNewDR()
@@ -207,7 +209,7 @@ public final class JdbNewDR
 						byte[] data1 = new byte[buf.limit()];
 						System.arraycopy(buf.array(), 0, data1, 0, data1.length);
 						System.arraycopy(buf.array(), 0, cnt, 1, cnt.length-1);
-						int len = JdbResources.byteArrayToInt(data1);
+						int len = AMEFResources.byteArrayToInt(data1);
 						state++;	
 						buf.clear();
 						buf.limit(len);
@@ -236,7 +238,7 @@ public final class JdbNewDR
 				byte[] data1 = new byte[buf.limit()+cnt.length];
 				System.arraycopy(cnt, 0, data1, 0, data.length);
 				System.arraycopy(buf.array(), 0, data1, cnt.length, data.length);
-				int len = JdbResources.byteArrayToInt(data1);
+				int len = AMEFResources.byteArrayToInt(data1);
 				state++;						
 				buf.limit(len);
 			}

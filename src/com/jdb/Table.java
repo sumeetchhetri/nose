@@ -49,7 +49,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.amef.AMEFDecodeException;
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
+import com.amef.AMEFResources;
 import com.server.JdbFlusher;
 
 @SuppressWarnings("unchecked")
@@ -228,12 +229,12 @@ public final class Table implements Serializable
 		}
 	}
 	
-	protected void storeObject(JDBObject object,JdbFlusher flusher)
+	protected void storeObject(AMEFObject object,JdbFlusher flusher)
 	{		
 		//flusher.addObject(object);
 	}
 	
-	protected void storeObjects(List<JDBObject> objects,JdbFlusher flusher)
+	protected void storeObjects(List<AMEFObject> objects,JdbFlusher flusher)
 	{		
 		
 	}
@@ -303,9 +304,9 @@ public final class Table implements Serializable
 		return objects;
 	}
 	
-	protected List<JDBObject> getAMEFObjects()
+	protected List<AMEFObject> getAMEFObjects()
 	{
-		List<JDBObject> objects = new ArrayList<JDBObject>(1000000);
+		List<AMEFObject> objects = new ArrayList<AMEFObject>(1000000);
 		try
 		{	
 			if(!new File(getIndexFileName()).exists())
@@ -318,22 +319,22 @@ public final class Table implements Serializable
 			reader.close();
 			String fileName = partitions.get(currentFileIndex);
 			
-			List<FutureTask<List<JDBObject>>> futures = new ArrayList<FutureTask<List<JDBObject>>>();
+			List<FutureTask<List<AMEFObject>>> futures = new ArrayList<FutureTask<List<AMEFObject>>>();
 			if(temp1!=null)
 			{
 				ExecutorService executor = Executors.newFixedThreadPool(temp1.length); 
 				JdbReaderTask task = new JdbReaderTask(fileName,0);	
-				FutureTask<List<JDBObject>> future = new FutureTask<List<JDBObject>>(task);
+				FutureTask<List<AMEFObject>> future = new FutureTask<List<AMEFObject>>(task);
 				executor.execute(future);
 				futures.add(future);
 				for (String temp2 : temp1)
 				{
 					task = new JdbReaderTask(fileName,Integer.parseInt(temp2));	
-					future = new FutureTask<List<JDBObject>>(task);
+					future = new FutureTask<List<AMEFObject>>(task);
 					executor.execute(future);
 					futures.add(future);
 				}			
-				for (FutureTask<List<JDBObject>> future1 : futures)
+				for (FutureTask<List<AMEFObject>> future1 : futures)
 				{
 					try
 					{
@@ -356,7 +357,7 @@ public final class Table implements Serializable
 			{
 				ExecutorService executor = Executors.newFixedThreadPool(1); 
 				JdbReaderTask task = new JdbReaderTask(fileName,0);	
-				FutureTask<List<JDBObject>> future = new FutureTask<List<JDBObject>>(task);
+				FutureTask<List<AMEFObject>> future = new FutureTask<List<AMEFObject>>(task);
 				executor.execute(future);
 				futures.add(future);							
 				try
@@ -400,7 +401,7 @@ public final class Table implements Serializable
 								| ((length[2] & 0xff) << 8) | ((length[3] & 0xff));
 				byte[] data = new byte[lengthm];
 				jdbin.read(data);
-				JDBObject object = decoder.decode(data, false, false);
+				AMEFObject object = decoder.decode(data, false, false);
 				objects.add(object);
 			}
 		}
@@ -428,7 +429,7 @@ public final class Table implements Serializable
 		return objects;
 	}
 	
-	private static boolean evaluate(JDBObject objec,
+	private static boolean evaluate(AMEFObject objec,
 			Map<String,Opval> whrandcls,Map<String,Opval> whrorcls,
 			Map<String,Integer> whrclsInd,Map<Integer,String> whrclsIndv,
 			Map<Integer,String> whrclsIndt)
@@ -481,36 +482,36 @@ public final class Table implements Serializable
 		else if(type.equalsIgnoreCase("int"))
 		{
 			if(operator.equals("=") || operator.equals("=="))
-				return JdbResources.byteArrayToInt(left) == Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) == Integer.parseInt(right);
 			else if(operator.equals("!=") || operator.equals("<>"))
-				return JdbResources.byteArrayToInt(left) != Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) != Integer.parseInt(right);
 			else if(operator.equals(">"))
-				return JdbResources.byteArrayToInt(left) > Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) > Integer.parseInt(right);
 			else if(operator.equals("<"))
-				return JdbResources.byteArrayToInt(left) < Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) < Integer.parseInt(right);
 			else if(operator.equals(">="))
-				return JdbResources.byteArrayToInt(left) >= Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) >= Integer.parseInt(right);
 			else if(operator.equals("<="))
-				return JdbResources.byteArrayToInt(left) <= Integer.parseInt(right);
+				return AMEFResources.byteArrayToInt(left) <= Integer.parseInt(right);
 			else if(operator.equals(" like "))
-				return String.valueOf(JdbResources.byteArrayToInt(left)).indexOf(right)!=-1;
+				return String.valueOf(AMEFResources.byteArrayToInt(left)).indexOf(right)!=-1;
 		}
 		else if(type.equalsIgnoreCase("long"))
 		{
 			if(operator.equals("=") || operator.equals("=="))
-				return JdbResources.byteArrayToLong(left) == Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) == Long.parseLong(right);
 			else if(operator.equals("!=") || operator.equals("<>"))
-				return JdbResources.byteArrayToLong(left) != Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) != Long.parseLong(right);
 			else if(operator.equals(">"))
-				return JdbResources.byteArrayToLong(left) > Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) > Long.parseLong(right);
 			else if(operator.equals("<"))
-				return JdbResources.byteArrayToLong(left) < Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) < Long.parseLong(right);
 			else if(operator.equals(">="))
-				return JdbResources.byteArrayToLong(left) >= Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) >= Long.parseLong(right);
 			else if(operator.equals("<="))
-				return JdbResources.byteArrayToLong(left) <= Long.parseLong(right);
+				return AMEFResources.byteArrayToLong(left) <= Long.parseLong(right);
 			else if(operator.equals(" like "))
-				return String.valueOf(JdbResources.byteArrayToInt(left)).indexOf(right)!=-1;
+				return String.valueOf(AMEFResources.byteArrayToInt(left)).indexOf(right)!=-1;
 		}
 		else if(type.equalsIgnoreCase("double") || type.equalsIgnoreCase("float"))
 		{
@@ -593,7 +594,7 @@ public final class Table implements Serializable
 		return j;
 	}
 	
-	private String createRow(String cond,JDBObject obh1,JDBObject obh, Map<String, Integer> valInd, boolean b) throws Exception
+	private String createRow(String cond,AMEFObject obh1,AMEFObject obh, Map<String, Integer> valInd, boolean b) throws Exception
 	{		
 		if(cond.equalsIgnoreCase("sysdate()"))
 		{
@@ -853,7 +854,7 @@ public final class Table implements Serializable
 		else throw new Exception("Invalid operator");
 	}
 	
-	protected int getAMEFObjectsb(Queue<Object> q,InputStream jdbin, String subq, JDBObject objtab, String[] qparts) throws Exception
+	protected int getAMEFObjectsb(Queue<Object> q,InputStream jdbin, String subq, AMEFObject objtab, String[] qparts) throws Exception
 	{
 		int rec = 0;
 		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
@@ -913,36 +914,36 @@ public final class Table implements Serializable
 				if(jdbin.available()>4)
 				{
 					boolean done = false,last = false;
-					JDBObject lastobh = new JDBObject();
+					AMEFObject lastobh = new AMEFObject();
 					while(jdbin.available()>4 && !done)
 					{	
 						rec++;
 						jdbin.read(type);
 						int lengthm = 0;
 						byte[] le = null;
-						if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+						if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 						{
 							//le = new byte[1];
 							//jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(type,1,1)-3;
+							lengthm = AMEFResources.byteArrayToInt(type,1,1)-3;
 						}
-						else if(type[0]==JDBObject.S_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 						{
 							//le = new byte[2];
 							//jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(type,1,2)-2;
+							lengthm = AMEFResources.byteArrayToInt(type,1,2)-2;
 						}
-						else if(type[0]==JDBObject.B_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 						{
 							//le = new byte[3];
 							//jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(type,1,3)-1;
+							lengthm = AMEFResources.byteArrayToInt(type,1,3)-1;
 						}
 						else
 						{
 							//le = new byte[4];
 							//jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(type,1,4);
+							lengthm = AMEFResources.byteArrayToInt(type,1,4);
 						}
 						//ByteBuffer buf  = ByteBuffer.allocate(5+lengthm);
 						byte[] data = new byte[5+lengthm];
@@ -953,10 +954,10 @@ public final class Table implements Serializable
 						//buf.put(data);
 						//buf.flip();
 						//buf.clear();
-						JDBObject obh = JdbResources.getDecoder().decodeB(data, false,true);
+						AMEFObject obh = AMEFResources.getDecoder().decodeB(data, false,true);
 						if(whrandcls.size()!=0 || whrorcls.size()!=0)
 						{	
-							//obh = JdbResources.getDecoder().decodeB(data, false,true);
+							//obh = AMEFResources.getDecoder().decodeB(data, false,true);
 							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
 							{
 								//q.add(buf.array());
@@ -974,14 +975,14 @@ public final class Table implements Serializable
 						}
 						else
 						{
-							JDBObject obh1 = new JDBObject();
+							AMEFObject obh1 = new AMEFObject();
 							for (int i = 0; i < qparts.length; i++)
 							{									
 								createRow(qparts[i], obh1, obh, valInd, true);
 							}
 							if(!last)
 							{
-								q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+								q.add(AMEFResources.getEncoder().encodeWL(obh1,true));
 							}
 						}
 						if(cuurcnt==100000)
@@ -992,7 +993,7 @@ public final class Table implements Serializable
 					}
 					if(last && lastobh!=null)
 					{
-						q.add(JdbResources.getEncoder().encodeWL(lastobh,true));						
+						q.add(AMEFResources.getEncoder().encodeWL(lastobh,true));						
 					}
 					return rec;
 				}
@@ -1007,29 +1008,29 @@ public final class Table implements Serializable
 				jdbin.read(type);
 				int lengthm = 0;
 				byte[] le = null;
-				if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+				if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 				{
 					le = new byte[1];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.S_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 				{
 					le = new byte[2];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.B_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 				{
 					le = new byte[3];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				else
 				{
 					le = new byte[4];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 				byte[] data = new byte[lengthm];
@@ -1039,7 +1040,7 @@ public final class Table implements Serializable
 				buf.put(data);
 				buf.flip();
 				buf.clear();
-				JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+				AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 				if(whrandcls.size()!=0 || whrorcls.size()!=0)
 				{						
 					if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -1053,12 +1054,12 @@ public final class Table implements Serializable
 				}
 				else
 				{
-					JDBObject obh1 = new JDBObject();
+					AMEFObject obh1 = new AMEFObject();
 					for (int i = 0; i < qparts.length; i++)
 					{	
 						createRow(qparts[i], obh1, obh, valInd, true);
 					}
-					q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+					q.add(AMEFResources.getEncoder().encodeWL(obh1,true));
 				}
 			}
 			return rec;
@@ -1076,7 +1077,7 @@ public final class Table implements Serializable
 	}
 	
 	
-	protected int getAMEFObjectsbc(Queue<Object> q,InputStream jdbin, String subq, JDBObject objtab, String[] qparts,SocketChannel channel) throws Exception
+	protected int getAMEFObjectsbc(Queue<Object> q,InputStream jdbin, String subq, AMEFObject objtab, String[] qparts,SocketChannel channel) throws Exception
 	{
 		int rec = 0;
 		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
@@ -1136,36 +1137,36 @@ public final class Table implements Serializable
 				if(jdbin.available()>4)
 				{
 					boolean done = false,last = false;
-					JDBObject lastobh = new JDBObject();
+					AMEFObject lastobh = new AMEFObject();
 					while(jdbin.available()>4 && !done)
 					{	
 						rec++;
 						jdbin.read(type);
 						int lengthm = 0;
 						byte[] le = null;
-						if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+						if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 						{
 							le = new byte[1];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.S_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 						{
 							le = new byte[2];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.B_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 						{
 							le = new byte[3];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						else
 						{
 							le = new byte[4];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						Thread.sleep(0, 1);
 						ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
@@ -1176,7 +1177,7 @@ public final class Table implements Serializable
 						buf.put(data);
 						buf.flip();
 						buf.clear();
-						JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+						AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 						if(whrandcls.size()!=0 || whrorcls.size()!=0)
 						{						
 							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -1209,15 +1210,15 @@ public final class Table implements Serializable
 						}
 						else
 						{
-							JDBObject obh1 = new JDBObject();
+							AMEFObject obh1 = new AMEFObject();
 							for (int i = 0; i < qparts.length; i++)
 							{									
 								createRow(qparts[i], obh1, obh, valInd, true);
 							}
 							if(!last)
 							{
-								//q.add(JdbResources.getEncoder().encodeWL(obh1,true));
-								byte[] encData = JdbResources.getEncoder().encodeWL(obh1,true);
+								//q.add(AMEFResources.getEncoder().encodeWL(obh1,true));
+								byte[] encData = AMEFResources.getEncoder().encodeWL(obh1,true);
 								if(b.limit()+encData.length<b.capacity())
 									b.put(encData);
 								else
@@ -1237,8 +1238,8 @@ public final class Table implements Serializable
 					}
 					if(last && lastobh!=null)
 					{
-						//q.add(JdbResources.getEncoder().encodeWL(lastobh,true));
-						byte[] encData = JdbResources.getEncoder().encodeWL(lastobh,true);
+						//q.add(AMEFResources.getEncoder().encodeWL(lastobh,true));
+						byte[] encData = AMEFResources.getEncoder().encodeWL(lastobh,true);
 						if(b.limit()+encData.length<b.capacity())
 							b.put(encData);
 						else
@@ -1267,29 +1268,29 @@ public final class Table implements Serializable
 				jdbin.read(type);
 				int lengthm = 0;
 				byte[] le = null;
-				if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+				if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 				{
 					le = new byte[1];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.S_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 				{
 					le = new byte[2];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.B_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 				{
 					le = new byte[3];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				else
 				{
 					le = new byte[4];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 				byte[] data = new byte[lengthm];
@@ -1299,7 +1300,7 @@ public final class Table implements Serializable
 				buf.put(data);
 				buf.flip();
 				buf.clear();
-				JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+				AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 				if(whrandcls.size()!=0 || whrorcls.size()!=0)
 				{						
 					if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -1313,12 +1314,12 @@ public final class Table implements Serializable
 				}
 				else
 				{
-					JDBObject obh1 = new JDBObject();
+					AMEFObject obh1 = new AMEFObject();
 					for (int i = 0; i < qparts.length; i++)
 					{	
 						createRow(qparts[i], obh1, obh, valInd, true);
 					}
-					q.add(JdbResources.getEncoder().encodeWL(obh1,true));
+					q.add(AMEFResources.getEncoder().encodeWL(obh1,true));
 				}
 			}
 			return rec;
@@ -1335,7 +1336,7 @@ public final class Table implements Serializable
 		}
 	}
 	
-	private boolean checkColumnExists(String cond,JDBObject objtab)
+	private boolean checkColumnExists(String cond,AMEFObject objtab)
 	{
 		for (int i = 0; i < objtab.getPackets().size(); i++)
 		{
@@ -1360,7 +1361,7 @@ public final class Table implements Serializable
 		return false;
 	}
 	
-	private boolean isAggregateFunc(String cond,JDBObject objtab)
+	private boolean isAggregateFunc(String cond,AMEFObject objtab)
 	{
 		for (int i = 0; i < objtab.getPackets().size(); i++)
 		{
@@ -1377,7 +1378,7 @@ public final class Table implements Serializable
 		return false;
 	}
 	
-	private boolean isScalarFunc(String cond,JDBObject objtab)
+	private boolean isScalarFunc(String cond,AMEFObject objtab)
 	{
 		for (int i = 0; i < objtab.getPackets().size(); i++)
 		{
@@ -1393,7 +1394,7 @@ public final class Table implements Serializable
 		return false;
 	}
 	
-	protected List getAMEFObjectso(Queue<Object> q,InputStream jdbin, String subq, JDBObject objtab, String[] qparts, boolean one, boolean aggr, String grpbycol) throws Exception
+	protected List getAMEFObjectso(Queue<Object> q,InputStream jdbin, String subq, AMEFObject objtab, String[] qparts, boolean one, boolean aggr, String grpbycol) throws Exception
 	{
 		List list = new ArrayList();
 		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
@@ -1499,29 +1500,29 @@ public final class Table implements Serializable
 						jdbin.read(type);
 						int lengthm = 0;
 						byte[] le = null;
-						if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+						if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 						{
 							le = new byte[1];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.S_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 						{
 							le = new byte[2];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.B_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 						{
 							le = new byte[3];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						else
 						{
 							le = new byte[4];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 						byte[] data = new byte[lengthm];
@@ -1531,7 +1532,7 @@ public final class Table implements Serializable
 						buf.put(data);
 						buf.flip();
 						buf.clear();
-						JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+						AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 						if(whrandcls.size()!=0 || whrorcls.size()!=0)
 						{						
 							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -1548,7 +1549,7 @@ public final class Table implements Serializable
 						{
 							if(one)
 							{
-								JDBObject obh1 = new JDBObject();
+								AMEFObject obh1 = new AMEFObject();
 								for (int i = 0; i < qparts.length; i++)
 								{
 									createRow(qparts[i], obh1, obh, valInd, true);
@@ -1557,7 +1558,7 @@ public final class Table implements Serializable
 							}
 							else if(aggr)
 							{
-								JDBObject obh1 = new JDBObject();
+								AMEFObject obh1 = new AMEFObject();
 								for (int i = 0; i < qparts.length; i++)
 								{
 									if(isScalarFunc(qparts[i], objtab))
@@ -1582,14 +1583,14 @@ public final class Table implements Serializable
 					{	
 						for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 						{
-							JDBObject obh = new JDBObject();
+							AMEFObject obh = new AMEFObject();
 							Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();
 							for (Iterator iter1 = aggVals.entrySet().iterator(); iter1.hasNext();)
 							{
 								Map.Entry<Object,AggInfo> entry1 = (Map.Entry<Object,AggInfo>)iter1.next();
 								if(mp.get((String)entry1.getKey())!=null)
 								{
-									JDBObject objt = (JDBObject)entry.getKey();
+									AMEFObject objt = (AMEFObject)entry.getKey();
 									for (int i = 0; i < objt.getPackets().size(); i++)
 									{
 										if(objt.getPackets().get(i).getNameStr().equals((String)entry1.getKey()))
@@ -1600,7 +1601,7 @@ public final class Table implements Serializable
 								}
 								else if(isScalarFunc((String)entry1.getKey(), objtab))
 								{
-									createRow((String)entry1.getKey(), obh, (JDBObject)entry.getKey(), valInd, false);
+									createRow((String)entry1.getKey(), obh, (AMEFObject)entry.getKey(), valInd, false);
 								}
 								else if(((String)entry1.getKey()).endsWith("count"))
 								{
@@ -1630,29 +1631,29 @@ public final class Table implements Serializable
 				jdbin.read(type);
 				int lengthm = 0;
 				byte[] le = null;
-				if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+				if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 				{
 					le = new byte[1];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.S_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 				{
 					le = new byte[2];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.B_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 				{
 					le = new byte[3];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				else
 				{
 					le = new byte[4];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 				byte[] data = new byte[lengthm];
@@ -1662,7 +1663,7 @@ public final class Table implements Serializable
 				buf.put(data);
 				buf.flip();
 				buf.clear();
-				JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+				AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 				if(whrandcls.size()!=0 || whrorcls.size()!=0)
 				{						
 					if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -1678,7 +1679,7 @@ public final class Table implements Serializable
 				{
 					if(one)
 					{
-						JDBObject obh1 = new JDBObject();
+						AMEFObject obh1 = new AMEFObject();
 						for (int i = 0; i < qparts.length; i++)
 						{	
 							if(qparts[i].equalsIgnoreCase("sysdate()"))
@@ -1709,7 +1710,7 @@ public final class Table implements Serializable
 		}
 	}
 	
-	private Map<String,Integer> getPositions(JDBObject objtab)
+	private Map<String,Integer> getPositions(AMEFObject objtab)
 	{
 		Map<String,Integer> whrandcls = new HashMap<String, Integer>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -1719,7 +1720,7 @@ public final class Table implements Serializable
 		return whrandcls;
 	}
 	
-	private Map<String,String> getTypes(JDBObject objtab)
+	private Map<String,String> getTypes(AMEFObject objtab)
 	{
 		Map<String,String> whrandcls = new HashMap<String, String>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -1826,7 +1827,7 @@ public final class Table implements Serializable
 		public boolean aggr,cnttyp;		
 	}
 	
-	private AggTyp createRow(String cond,JDBObject objm,JDBObject jdbo,Map<Object, AggInfo> aggVals,Map<String, Integer> mp, String grpbycol, Map<String, String> mpt,Map<Object, AggInfo> rowVals)
+	private AggTyp createRow(String cond,AMEFObject objm,AMEFObject jdbo,Map<Object, AggInfo> aggVals,Map<String, Integer> mp, String grpbycol, Map<String, String> mpt,Map<Object, AggInfo> rowVals)
 	{
 		AggTyp aggr = new AggTyp();;
 		if(cond.indexOf("count(")!=-1)
@@ -2066,12 +2067,12 @@ public final class Table implements Serializable
 	}
 	
 	
-	private Object getKey1(JDBObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
+	private Object getKey1(AMEFObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
 	{
 		return colnam+type;
 	}
 	
-	private Object getKey(JDBObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
+	private Object getKey(AMEFObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
 	{
 		if(grpbycol==null || grpbycol.equals(""))
 			return colnam+type;
@@ -2090,7 +2091,7 @@ public final class Table implements Serializable
 		else
 		{
 			String[] grbcs = grpbycol.split(",");
-			JDBObject obj = new JDBObject();
+			AMEFObject obj = new AMEFObject();
 			for (int i = 0; i < grbcs.length; i++)
 			{
 				obj.addPacket(objm.getPackets().get(mp.get(grbcs[i])).getValue(),
@@ -2109,7 +2110,7 @@ public final class Table implements Serializable
 			return objm.getValue()[0];
 		return null;*/
 	}
-	protected Set getAMEFObjectsDo(Queue<Object> q,InputStream jdbin, String subq, JDBObject objtab, String[] qparts, boolean one, boolean aggr, String grpbycol) throws Exception
+	protected Set getAMEFObjectsDo(Queue<Object> q,InputStream jdbin, String subq, AMEFObject objtab, String[] qparts, boolean one, boolean aggr, String grpbycol) throws Exception
 	{
 		Set list = new HashSet();
 		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
@@ -2172,29 +2173,29 @@ public final class Table implements Serializable
 						jdbin.read(type);
 						int lengthm = 0;
 						byte[] le = null;
-						if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+						if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 						{
 							le = new byte[1];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.S_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 						{
 							le = new byte[2];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
-						else if(type[0]==JDBObject.B_OBJECT_TYPE)
+						else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 						{
 							le = new byte[3];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						else
 						{
 							le = new byte[4];
 							jdbin.read(le);
-							lengthm = JdbResources.byteArrayToInt(le);
+							lengthm = AMEFResources.byteArrayToInt(le);
 						}
 						ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 						byte[] data = new byte[lengthm];
@@ -2204,7 +2205,7 @@ public final class Table implements Serializable
 						buf.put(data);
 						buf.flip();
 						buf.clear();
-						JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+						AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 						if(whrandcls.size()!=0 || whrorcls.size()!=0)
 						{						
 							if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -2222,7 +2223,7 @@ public final class Table implements Serializable
 						{
 							if(one)
 							{
-								JDBObject obh1 = new JDBObject();
+								AMEFObject obh1 = new AMEFObject();
 								for (int i = 0; i < qparts.length; i++)
 								{	
 									createRow(qparts[i], obh1, obh, valInd, true);
@@ -2246,29 +2247,29 @@ public final class Table implements Serializable
 				jdbin.read(type);
 				int lengthm = 0;
 				byte[] le = null;
-				if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+				if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 				{
 					le = new byte[1];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.S_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 				{
 					le = new byte[2];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
-				else if(type[0]==JDBObject.B_OBJECT_TYPE)
+				else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 				{
 					le = new byte[3];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				else
 				{
 					le = new byte[4];
 					jdbin.read(le);
-					lengthm = JdbResources.byteArrayToInt(le);
+					lengthm = AMEFResources.byteArrayToInt(le);
 				}
 				ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 				byte[] data = new byte[lengthm];
@@ -2278,7 +2279,7 @@ public final class Table implements Serializable
 				buf.put(data);
 				buf.flip();
 				buf.clear();
-				JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);
+				AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);
 				if(whrandcls.size()!=0 || whrorcls.size()!=0)
 				{						
 					if(!evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
@@ -2295,7 +2296,7 @@ public final class Table implements Serializable
 				{
 					if(one)
 					{
-						JDBObject obh1 = new JDBObject();
+						AMEFObject obh1 = new AMEFObject();
 						for (int i = 0; i < qparts.length; i++)
 						{	
 							createRow(qparts[i], obh1, obh, valInd, true);
@@ -2340,10 +2341,10 @@ public final class Table implements Serializable
 			ramInd = new RandomAccessFile(getIndexFileName(),"r");
 		while(ramInd.read(ident)!=-1)
 		{	
-			long idenlgid = JdbResources.byteArrayToLong(ident,4);
+			long idenlgid = AMEFResources.byteArrayToLong(ident,4);
 			if(idenlgid==id)
 			{
-				tr = JdbResources.byteArrayToLong(ident,4,4);	
+				tr = AMEFResources.byteArrayToLong(ident,4,4);	
 				index.put(idenlgid, tr);
 				break;
 			}
@@ -2351,7 +2352,7 @@ public final class Table implements Serializable
 		return tr;
 	}
 	
-	protected int updateObjects(String subq, JDBObject objtab,Map<String,byte[]> nvalues, int index) throws Exception
+	protected int updateObjects(String subq, AMEFObject objtab,Map<String,byte[]> nvalues, int index) throws Exception
 	{
 		int rec = 0;
 		Map<String,Opval> whrandcls = new HashMap<String, Opval>();
@@ -2412,29 +2413,29 @@ public final class Table implements Serializable
 					jdbin.read(type);
 					int lengthm = 0;
 					byte[] le = null;
-					if(type[0]==(byte)JDBObject.VS_OBJECT_TYPE)
+					if(type[0]==(byte)AMEFObject.VS_OBJECT_TYPE)
 					{
 						le = new byte[1];
 						jdbin.read(le);
-						lengthm = JdbResources.byteArrayToInt(le);
+						lengthm = AMEFResources.byteArrayToInt(le);
 					}
-					else if(type[0]==JDBObject.S_OBJECT_TYPE)
+					else if(type[0]==AMEFObject.S_OBJECT_TYPE)
 					{
 						le = new byte[2];
 						jdbin.read(le);
-						lengthm = JdbResources.byteArrayToInt(le);
+						lengthm = AMEFResources.byteArrayToInt(le);
 					}
-					else if(type[0]==JDBObject.B_OBJECT_TYPE)
+					else if(type[0]==AMEFObject.B_OBJECT_TYPE)
 					{
 						le = new byte[3];
 						jdbin.read(le);
-						lengthm = JdbResources.byteArrayToInt(le);
+						lengthm = AMEFResources.byteArrayToInt(le);
 					}
 					else
 					{
 						le = new byte[4];
 						jdbin.read(le);
-						lengthm = JdbResources.byteArrayToInt(le);
+						lengthm = AMEFResources.byteArrayToInt(le);
 					}
 					ByteBuffer buf  = ByteBuffer.allocate(1+le.length+lengthm);
 					byte[] data = new byte[lengthm];
@@ -2444,13 +2445,13 @@ public final class Table implements Serializable
 					buf.put(data);
 					buf.flip();
 					buf.clear();
-					JDBObject obh = JdbResources.getDecoder().decodeB(buf.array(), false,true);	
-					JDBObject obh1 = null;
+					AMEFObject obh = AMEFResources.getDecoder().decodeB(buf.array(), false,true);	
+					AMEFObject obh1 = null;
 					if(whrandcls.size()!=0 || whrorcls.size()!=0)
 					{							
 						if(evaluate(obh, whrandcls, whrorcls, whrclsInd, whrclsIndv, whrclsIndt))
 						{
-							obh1 = new JDBObject();
+							obh1 = new AMEFObject();
 							for (int i = 0; i < obh.getPackets().size(); i++)
 							{
 								if(nvalues.get(setrel.get(i))==null)
@@ -2462,7 +2463,7 @@ public final class Table implements Serializable
 					}
 					else if(subq.equals(""))
 					{
-						obh1 = new JDBObject();
+						obh1 = new AMEFObject();
 						for (int i = 0; i < obh.getPackets().size(); i++)
 						{
 							if(nvalues.get(setrel.get(i))==null)
@@ -2474,7 +2475,7 @@ public final class Table implements Serializable
 					if(obh1==null)
 						bos.write(buf.array());
 					else
-						bos.write(JdbResources.getEncoder().encodeWL(obh1, true));
+						bos.write(AMEFResources.getEncoder().encodeWL(obh1, true));
 				}
 				if(bos!=null)
 				{

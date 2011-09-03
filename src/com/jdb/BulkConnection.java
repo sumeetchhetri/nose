@@ -39,7 +39,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.amef.AMEFEncodeException;
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
+import com.amef.AMEFResources;
 import com.jdb.Table.AggInfo;
 import com.jdb.Table.Opval;
 import com.server.JdbFlusher;
@@ -105,11 +106,11 @@ public final class BulkConnection
 		return selectColumnsWhere(dbname,table,null,where);
 	}
 	
-	public List<JDBObject> selectAMEFObject(String dbname,String tableName,String where)
+	public List<AMEFObject> selectAMEFObject(String dbname,String tableName,String where)
 	{
 		return DBManager.getTable(dbname, tableName).getAMEFObjects();
 	}*/
-	private Map<String,Integer> getPositions(JDBObject objtab)
+	private Map<String,Integer> getPositions(AMEFObject objtab)
 	{
 		Map<String,Integer> whrandcls = new HashMap<String, Integer>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -119,7 +120,7 @@ public final class BulkConnection
 		return whrandcls;
 	}
 	
-	private Map<String,Integer> getPositions(JDBObject objtab,String table)
+	private Map<String,Integer> getPositions(AMEFObject objtab,String table)
 	{
 		Map<String,Integer> whrandcls = new HashMap<String, Integer>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -454,7 +455,7 @@ public final class BulkConnection
 	
 	private static void getLogicalValue(String ter,List<Boolean> whrandcls,
 			Map<String,Integer> map1, Map<String,Integer> map2,
-			String alias1, String alias2,JDBObject objec1,JDBObject objec2) throws Exception
+			String alias1, String alias2,AMEFObject objec1,AMEFObject objec2) throws Exception
 	{
 		String oper = "";
 		if(ter.indexOf("!=")!=-1)
@@ -557,7 +558,7 @@ public final class BulkConnection
 	
 	private static void getLogicalValue2(String ter,List<Boolean> whrandcls,
 			Map<String,Integer> map1, Map<String,Integer> map2,
-			String alias1, String alias2,JDBObject objec1,JDBObject objec2) throws Exception
+			String alias1, String alias2,AMEFObject objec1,AMEFObject objec2) throws Exception
 	{
 		String oper = "";
 		if(ter.indexOf("!=")!=-1)
@@ -658,7 +659,7 @@ public final class BulkConnection
 	}
 	
 	private static void getLogicalValueHv(String ter,List<Boolean> whrandcls,
-			Map<String,Object> map1,JDBObject objec1, 
+			Map<String,Object> map1,AMEFObject objec1, 
 			LinkedHashMap<Object, com.jdb.BulkConnection.AggInfo> aggVals, Map<String, Character> mpst) throws Exception
 	{
 		String oper = "";
@@ -727,12 +728,12 @@ public final class BulkConnection
 		}
 		else if(val1!=null && val2==null && isAConstantS(key2))
 		{
-			if(JDBObject.isNumber(mpst.get(key1)))
+			if(AMEFObject.isNumber(mpst.get(key1)))
 			{
 				if(val1 instanceof byte[])
 				{
 					whrandcls.add(eval((byte[])val1, 
-							JdbResources.longToByteArray(Long.parseLong(key2), 8), 
+							AMEFResources.longToByteArray(Long.parseLong(key2), 8), 
 							mpst.get(key1), mpst.get(key1), oper));
 				}
 				else if(val1 instanceof Long)
@@ -740,7 +741,7 @@ public final class BulkConnection
 					whrandcls.add(val1==Long.valueOf(key2));
 				}
 			}
-			else if(JDBObject.isFloatingPoint(mpst.get(key1)))
+			else if(AMEFObject.isFloatingPoint(mpst.get(key1)))
 			{
 				if(val1 instanceof byte[])
 				{
@@ -749,7 +750,7 @@ public final class BulkConnection
 							mpst.get(key1), mpst.get(key1), oper));
 				}
 			}
-			else if(JDBObject.isString(mpst.get(key1)))
+			else if(AMEFObject.isString(mpst.get(key1)))
 			{
 				if(val1 instanceof byte[])
 				{
@@ -763,12 +764,12 @@ public final class BulkConnection
 		}
 		else if(val1==null && val2!=null && isAConstantS(key1))
 		{
-			if(JDBObject.isNumber(mpst.get(key2)))
+			if(AMEFObject.isNumber(mpst.get(key2)))
 			{
 				if(val2 instanceof byte[])
 				{
 					whrandcls.add(eval((byte[])val2, 
-							JdbResources.longToByteArray(Long.parseLong(key1), 8), 
+							AMEFResources.longToByteArray(Long.parseLong(key1), 8), 
 							mpst.get(key2), mpst.get(key2), oper));
 				}
 				else if(val2 instanceof Long)
@@ -776,7 +777,7 @@ public final class BulkConnection
 					whrandcls.add(val2==Long.valueOf(key1));
 				}
 			}
-			else if(JDBObject.isFloatingPoint(mpst.get(key2)))
+			else if(AMEFObject.isFloatingPoint(mpst.get(key2)))
 			{
 				if(val2 instanceof byte[])
 				{
@@ -785,7 +786,7 @@ public final class BulkConnection
 							mpst.get(key2), mpst.get(key2), oper));
 				}
 			}
-			else if(JDBObject.isString(mpst.get(key2)) || JDBObject.isDate(mpst.get(key2)))
+			else if(AMEFObject.isString(mpst.get(key2)) || AMEFObject.isDate(mpst.get(key2)))
 			{
 				if(val2 instanceof byte[])
 				{
@@ -808,7 +809,7 @@ public final class BulkConnection
 	
 	private static boolean eval(byte[] left,byte[] right,char type1, char type2, String operator) throws Exception
 	{
-		if(JDBObject.isString(type1) && JDBObject.isString(type2))
+		if(AMEFObject.isString(type1) && AMEFObject.isString(type2))
 		{
 			String righ = new String(right);
 			if(righ.charAt(0)=='\'' || righ.charAt(0)=='"')
@@ -828,59 +829,41 @@ public final class BulkConnection
 			else if(operator.equals(" like "))
 				return new String(left).indexOf(righ)!=-1;
 		}
-		else if(JDBObject.isInteger(type1) && JDBObject.isInteger(type2))
+		else if(AMEFObject.isInteger(type1) && AMEFObject.isInteger(type2))
 		{
 			if(operator.equals("=") || operator.equals("=="))
-				return JdbResources.byteArrayToInt(left) == JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) == AMEFResources.byteArrayToInt(right);
 			else if(operator.equals("!=") || operator.equals("<>"))
-				return JdbResources.byteArrayToInt(left) != JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) != AMEFResources.byteArrayToInt(right);
 			else if(operator.equals(">"))
-				return JdbResources.byteArrayToInt(left) > JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) > AMEFResources.byteArrayToInt(right);
 			else if(operator.equals("<"))
-				return JdbResources.byteArrayToInt(left) < JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) < AMEFResources.byteArrayToInt(right);
 			else if(operator.equals(">="))
-				return JdbResources.byteArrayToInt(left) >= JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) >= AMEFResources.byteArrayToInt(right);
 			else if(operator.equals("<="))
-				return JdbResources.byteArrayToInt(left) <= JdbResources.byteArrayToInt(right);
+				return AMEFResources.byteArrayToInt(left) <= AMEFResources.byteArrayToInt(right);
 			else if(operator.equals(" like "))
-				return String.valueOf(JdbResources.byteArrayToInt(left)).indexOf(new String(""+JdbResources.byteArrayToInt(right)))!=-1;
+				return String.valueOf(AMEFResources.byteArrayToInt(left)).indexOf(new String(""+AMEFResources.byteArrayToInt(right)))!=-1;
 		}
-		else if(JDBObject.isNumber(type1) && JDBObject.isNumber(type2))
+		else if(AMEFObject.isNumber(type1) && AMEFObject.isNumber(type2))
 		{
 			if(operator.equals("=") || operator.equals("=="))
-				return JdbResources.byteArrayToLong(left) == JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) == AMEFResources.byteArrayToLong(right);
 			else if(operator.equals("!=") || operator.equals("<>"))
-				return JdbResources.byteArrayToLong(left) != JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) != AMEFResources.byteArrayToLong(right);
 			else if(operator.equals(">"))
-				return JdbResources.byteArrayToLong(left) > JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) > AMEFResources.byteArrayToLong(right);
 			else if(operator.equals("<"))
-				return JdbResources.byteArrayToLong(left) < JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) < AMEFResources.byteArrayToLong(right);
 			else if(operator.equals(">="))
-				return JdbResources.byteArrayToLong(left) >= JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) >= AMEFResources.byteArrayToLong(right);
 			else if(operator.equals("<="))
-				return JdbResources.byteArrayToLong(left) <= JdbResources.byteArrayToLong(right);
+				return AMEFResources.byteArrayToLong(left) <= AMEFResources.byteArrayToLong(right);
 			else if(operator.equals(" like "))
-				return String.valueOf(JdbResources.byteArrayToInt(left)).indexOf(new String(""+JdbResources.byteArrayToLong(right)))!=-1;
+				return String.valueOf(AMEFResources.byteArrayToInt(left)).indexOf(new String(""+AMEFResources.byteArrayToLong(right)))!=-1;
 		}
-		else if(JDBObject.isFloatingPoint(type1) && JDBObject.isFloatingPoint(type2))
-		{
-			String righ = new String(right);
-			if(operator.equals("=") || operator.equals("=="))
-				return new String(left).equals(righ);
-			else if(operator.equals("!=") || operator.equals("<>"))
-				return !new String(left).equals(righ);
-			else if(operator.equals(">"))
-				return new String(left).compareTo(righ)<0;
-			else if(operator.equals("<"))
-				return new String(left).compareTo(righ)>0;
-			else if(operator.equals(">="))
-				return new String(left).compareTo(righ)<0 || new String(left).equals(righ);
-			else if(operator.equals("<="))
-				return new String(left).compareTo(righ)>0 || new String(left).equals(righ);
-			else if(operator.equals(" like "))
-				return new String(left).indexOf(righ)!=-1;
-		}
-		else if(JDBObject.isDate(type1) && JDBObject.isDate(type2))
+		else if(AMEFObject.isFloatingPoint(type1) && AMEFObject.isFloatingPoint(type2))
 		{
 			String righ = new String(right);
 			if(operator.equals("=") || operator.equals("=="))
@@ -898,7 +881,25 @@ public final class BulkConnection
 			else if(operator.equals(" like "))
 				return new String(left).indexOf(righ)!=-1;
 		}
-		else if(JDBObject.isBoolean(type1) && JDBObject.isBoolean(type2))
+		else if(AMEFObject.isDate(type1) && AMEFObject.isDate(type2))
+		{
+			String righ = new String(right);
+			if(operator.equals("=") || operator.equals("=="))
+				return new String(left).equals(righ);
+			else if(operator.equals("!=") || operator.equals("<>"))
+				return !new String(left).equals(righ);
+			else if(operator.equals(">"))
+				return new String(left).compareTo(righ)<0;
+			else if(operator.equals("<"))
+				return new String(left).compareTo(righ)>0;
+			else if(operator.equals(">="))
+				return new String(left).compareTo(righ)<0 || new String(left).equals(righ);
+			else if(operator.equals("<="))
+				return new String(left).compareTo(righ)>0 || new String(left).equals(righ);
+			else if(operator.equals(" like "))
+				return new String(left).indexOf(righ)!=-1;
+		}
+		else if(AMEFObject.isBoolean(type1) && AMEFObject.isBoolean(type2))
 		{
 			if(operator.equals("=") || operator.equals("=="))
 				return left[0]==right[0];
@@ -907,7 +908,7 @@ public final class BulkConnection
 			else if(operator.equals(" like "))
 				return left[0]==right[0];
 		}
-		else if(JDBObject.isChar(type1) && JDBObject.isChar(type2))
+		else if(AMEFObject.isChar(type1) && AMEFObject.isChar(type2))
 		{
 			if(operator.equals("=") || operator.equals("=="))
 				return left[0]==right[0];
@@ -929,7 +930,7 @@ public final class BulkConnection
 		return false;
 	}
 
-	private static boolean evaluate(JDBObject objec,JDBObject objec1,String subq,
+	private static boolean evaluate(AMEFObject objec,AMEFObject objec1,String subq,
 			Map<String,Integer> map1, Map<String,Integer> map2,String alias1, String alias2) throws Exception
 	{
 		List<Boolean> whrandcls = new ArrayList<Boolean>();
@@ -971,7 +972,7 @@ public final class BulkConnection
 	}
 	
 	
-	private static boolean evaluate2(JDBObject objec,JDBObject objec1,String subq,
+	private static boolean evaluate2(AMEFObject objec,AMEFObject objec1,String subq,
 			Map<String,Integer> map1, Map<String,Integer> map2,String alias1, String alias2) throws Exception
 	{
 		List<Boolean> whrandcls = new ArrayList<Boolean>();
@@ -1013,7 +1014,7 @@ public final class BulkConnection
 	}
 	
 	
-	private static boolean evaluateHv(JDBObject objec,String subq,
+	private static boolean evaluateHv(AMEFObject objec,String subq,
 			Map<String,Object> map1, Map<String,Character> mpst, LinkedHashMap<Object, com.jdb.BulkConnection.AggInfo> aggVals) throws Exception
 	{
 		List<Boolean> whrandcls = new ArrayList<Boolean>();
@@ -1064,7 +1065,7 @@ public final class BulkConnection
 		return j;
 	}
 	
-	private Map<String,String> getTypes(JDBObject objtab)
+	private Map<String,String> getTypes(AMEFObject objtab)
 	{
 		Map<String,String> whrandcls = new HashMap<String, String>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -1074,7 +1075,7 @@ public final class BulkConnection
 		return whrandcls;
 	}
 	
-	private Map<String,String> getTypes(JDBObject objtab,String table)
+	private Map<String,String> getTypes(AMEFObject objtab,String table)
 	{
 		Map<String,String> whrandcls = new HashMap<String, String>();
 		for (int i = 0; i < objtab.getPackets().size(); i++)
@@ -1088,21 +1089,21 @@ public final class BulkConnection
 	{
 		public JI(int len, int hor)
 		{
-			reflist = new JDBObject[len][hor];
+			reflist = new AMEFObject[len][hor];
 			this.currpv = this.currph = 0;
 			this.hor = hor;
 		}
 		private int currpv,currph,hor;
 		private Map<String, Integer> mps;
-		private JDBObject[][] reflist;
-		public JDBObject getObj(int mi)
+		private AMEFObject[][] reflist;
+		public AMEFObject getObj(int mi)
 		{
 			if(hor==1)
 				return reflist[mi][0];
-			JDBObject jdbo = new JDBObject();
+			AMEFObject jdbo = new AMEFObject();
 			for (int i = 0; i < reflist[mi].length; i++) 
 			{
-				JDBObject jdb = reflist[mi][i];
+				AMEFObject jdb = reflist[mi][i];
 				for (int l = 0; l < jdb.getPackets().size(); l++)
 				{							
 					jdbo.addPacket(jdb.getPackets().get(l).getValue(),
@@ -1111,7 +1112,7 @@ public final class BulkConnection
 			}
 			return jdbo;
 		}
-		public void addObjh(JDBObject ref)
+		public void addObjh(AMEFObject ref)
 		{
 			reflist[currpv][currph] = ref;
 			currph++;
@@ -1127,10 +1128,10 @@ public final class BulkConnection
 		{
 			for (int i = 0; i < ref.reflist[mi].length; i++) 
 			{				
-				JDBObject jdbo = new JDBObject();									
+				AMEFObject jdbo = new AMEFObject();									
 				for (int l = 0; l < ref.reflist[mi][i].getPackets().size(); l++)
 				{							
-					jdbo.addNullPacket(JDBObject.
+					jdbo.addNullPacket(AMEFObject.
 							getEqvNullType(ref.reflist[mi][i].getPackets().get(l).getType()));
 				}
 				reflist[currpv][currph++] = jdbo;
@@ -1151,27 +1152,27 @@ public final class BulkConnection
 		}
 	}
 	
-	class JdbAscComparator implements Comparator<JDBObject>
+	class JdbAscComparator implements Comparator<AMEFObject>
 	{
 		int pos = -1;
 		JdbAscComparator(String coln,Map<String, Integer> mps)
 		{
 			pos = mps.get(coln);
 		}
-		public int compare(JDBObject _1, JDBObject _2)
+		public int compare(AMEFObject _1, AMEFObject _2)
 		{
 			return _1.getPackets().get(pos).compare(_2.getPackets().get(pos));
 		}
 	}
 	
-	class JdbDescComparator implements Comparator<JDBObject>
+	class JdbDescComparator implements Comparator<AMEFObject>
 	{
 		int pos = -1;
 		JdbDescComparator(String coln,Map<String, Integer> mps)
 		{
 			pos = mps.get(coln);
 		}
-		public int compare(JDBObject _1, JDBObject _2)
+		public int compare(AMEFObject _1, AMEFObject _2)
 		{
 			return -_1.getPackets().get(pos).compare(_2.getPackets().get(pos));
 		}
@@ -1180,10 +1181,10 @@ public final class BulkConnection
 	class JoinedIndex
 	{
 		public boolean[][] nnindexes; 
-		public List<JDBObject> reflist1,reflist2,nullreflist;
-		public JDBObject getJoinedData(int mi,int i,int j)
+		public List<AMEFObject> reflist1,reflist2,nullreflist;
+		public AMEFObject getJoinedData(int mi,int i,int j)
 		{
-			JDBObject jdbo = new JDBObject();
+			AMEFObject jdbo = new AMEFObject();
 			if(nnindexes[mi][0] && reflist1.get(i)!=null)
 			{
 				for (int l = 0; l < reflist1.get(i).getPackets().size(); l++)
@@ -1284,7 +1285,7 @@ public final class BulkConnection
 		if(qparts[0].equals("*") && !imaginaryaggr)
 		{
 			JI[] jis = new JI[2];
-			List<JDBObject> qs[] = new List[tables.length];
+			List<AMEFObject> qs[] = new List[tables.length];
 			Map<String,Integer> mps[] = new HashMap[tables.length+1];
 			Map<String,Integer> mpf = new HashMap<String,Integer>();
 			mps[tables.length] = new HashMap<String, Integer>();
@@ -1297,7 +1298,7 @@ public final class BulkConnection
 				if(tables[i].trim().split(" ").length==2)
 					aliases[i] = tables[i].trim().split(" ")[1];
 				Table table = DBManager.getTable("temp", tablen);
-				JDBObject objtab = new JDBObject();		
+				AMEFObject objtab = new AMEFObject();		
 				tabns[i] = table.getName();
 				for (int ii = 0; ii < table.getColumnNames().length; ii++)
 				{
@@ -1310,9 +1311,9 @@ public final class BulkConnection
 				else
 					cond = getConditions(subq, mps[i], aliases[i], table.getName());
 				if(distinct)
-					qs[i] = new ArrayList<JDBObject>((Set<JDBObject>)selectAMEFObjectsDo("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol));
+					qs[i] = new ArrayList<AMEFObject>((Set<AMEFObject>)selectAMEFObjectsDo("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol));
 				else
-					qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
+					qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
 				refs[i] = new int[qs[i].size()];
 			}
 			if(!ordbycol.equals(""))
@@ -1376,7 +1377,7 @@ public final class BulkConnection
 					limit = qs[0].size();
 				for (int i = 0; i < limit; i++)
 				{
-					q.add(JdbResources.getEncoder().encodeWL(qs[0].get(i), true));
+					q.add(AMEFResources.getEncoder().encodeWL(qs[0].get(i), true));
 				}
 				return;
 			}
@@ -1406,13 +1407,13 @@ public final class BulkConnection
 				jis[1] = new JI((int)size,j+1);
 				for(int i=0;i< jis[0].getLength();i++)
 				{					
-					JDBObject objm = jis[0].getObj(i);						
+					AMEFObject objm = jis[0].getObj(i);						
 					if(flags[0]==null)
 						flags[0] = new boolean[jis[1].getInitLength()];
 					
 					for(int k=0;k<qs[j].size();k++)
 					{
-						JDBObject obje = ((List<JDBObject>)qs[j]).get(k);
+						AMEFObject obje = ((List<AMEFObject>)qs[j]).get(k);
 						if(flags[j]==null)
 							flags[j] = new boolean[qs[j].size()];
 						boolean condi = (finjndcond.length>j)?evaluate2(objm, obje, finjndcond[j], mps[0], mps[j], aliases[0], aliases[j])
@@ -1434,10 +1435,10 @@ public final class BulkConnection
 									flags[0][i] = true;
 									flags[j][k] = true;
 									jis[1].addObjhJI(jis[0],i);
-									JDBObject jdbo = new JDBObject();
+									AMEFObject jdbo = new AMEFObject();
 									for (int l = 0; l < obje.getPackets().size(); l++)
 									{							
-										jdbo.addNullPacket(JDBObject.
+										jdbo.addNullPacket(AMEFObject.
 												getEqvNullType(obje.getPackets().get(l).getType()));
 									}
 									jis[1].addObjh(jdbo);
@@ -1479,10 +1480,10 @@ public final class BulkConnection
 									{
 										flags[0][i] = true;		
 										jis[1].addObjhJI(jis[0],i);
-										JDBObject jdbo = new JDBObject();	
+										AMEFObject jdbo = new AMEFObject();	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 										jis[1].addObjh(jdbo);
@@ -1492,10 +1493,10 @@ public final class BulkConnection
 									{
 										flags[j][k] = true;
 										jis[1].addObjhJINull(jis[0],i);
-										JDBObject jdbo = new JDBObject();	
+										AMEFObject jdbo = new AMEFObject();	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}										
 										jis[1].addObjh(jdbo);
@@ -1522,13 +1523,13 @@ public final class BulkConnection
 				limit = jis[0].getLength();
 			for (int o=0;o<(int)limit;o++)
 			{
-				q.add(JdbResources.getEncoder().encodeWL(jis[0].getObj(o), true));
+				q.add(AMEFResources.getEncoder().encodeWL(jis[0].getObj(o), true));
 			}
 		}
 		else
 		{			
 			int countss = 0;
-			List<JDBObject> qs[] = new List[tables.length];
+			List<AMEFObject> qs[] = new List[tables.length];
 			JI[] jis = new JI[2];
 			Map<String,Integer> mps[] = new HashMap[tables.length+1];
 			Map<String,Integer> mpf = new HashMap<String, Integer>();
@@ -1538,14 +1539,14 @@ public final class BulkConnection
 			String[] cond = null;
 			LinkedHashMap<Object, AggInfo> aggVals = null;
 			LinkedHashMap<Object, AggInfo> rowVals = null;
-			JDBObject[] objtbs = new JDBObject[tables.length];
+			AMEFObject[] objtbs = new AMEFObject[tables.length];
 			boolean aggr = false;
 			for (int i = 0; i < tables.length; i++)
 			{
 				String tablen = tables[i].trim().split(" ")[0];
 				Table table = DBManager.getTable("temp", tablen);
 				tabns[i] = table.getName();
-				JDBObject objtab = new JDBObject();		
+				AMEFObject objtab = new AMEFObject();		
 				for (int ii = 0; ii < table.getColumnNames().length; ii++)
 				{
 					objtab.addPacket(table.getColumnTypes()[ii],table.getColumnNames()[ii]);
@@ -1890,9 +1891,9 @@ public final class BulkConnection
 					}
 					qpartz[i] = qprts.toArray(new String[qprts.size()]);
 					if(distinct)
-						qs[i] = new ArrayList<JDBObject>((HashSet<JDBObject>)selectAMEFObjectsDo("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol));
+						qs[i] = new ArrayList<AMEFObject>((HashSet<AMEFObject>)selectAMEFObjectsDo("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol));
 					else
-						qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
+						qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
 				}
 				else
 				{
@@ -1902,9 +1903,9 @@ public final class BulkConnection
 						cond = getConditions(subq, mps[i], aliases[i],table.getName());
 					qpartz[i] = new String[]{"count(*)"};
 					if(distinct)
-						qs[i] = new ArrayList<JDBObject>((HashSet<JDBObject>)selectAMEFObjectsDo("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol));
+						qs[i] = new ArrayList<AMEFObject>((HashSet<AMEFObject>)selectAMEFObjectsDo("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol));
 					else
-						qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
+						qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
 				}
 			}
 			mps[tables.length] = new HashMap<String, Integer>();
@@ -1919,24 +1920,24 @@ public final class BulkConnection
 				if(imaginaryaggr)
 				{
 					int k = 0;
-					JDBObject obje = new JDBObject();
-					for (Iterator<JDBObject> iter1 = qs[0].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
+					AMEFObject obje = new AMEFObject();
+					for (Iterator<AMEFObject> iter1 = qs[0].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
 					{
-						JDBObject objm = iter1.next();
+						AMEFObject objm = iter1.next();
 						createRow("count(*)", objm, obje, aggVals, mps[0],mpt[0],mps[0],mpt[0],grpbycol,rowVals,tables[0],tables[0]);
 					}
 					qs[0].clear();
 					for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 					{
 						Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();					
-						qs[0].add((JDBObject)(entry.getValue().count));
+						qs[0].add((AMEFObject)(entry.getValue().count));
 					}
 				}
 				if(limit==-1)
 					limit = qs[0].size();
 				for (int i = 0; i < limit; i++)
 				{
-					q.add(JdbResources.getEncoder().encodeWL(qs[0].get(i), true));
+					q.add(AMEFResources.getEncoder().encodeWL(qs[0].get(i), true));
 				}
 				return;
 			}
@@ -2064,14 +2065,14 @@ public final class BulkConnection
 				jis[1] = new JI((int)size,j+1);
 				for (int i = 0; i < jis[0].getLength(); i++)
 				{					
-					JDBObject objm = jis[0].getObj(i);						
+					AMEFObject objm = jis[0].getObj(i);						
 					if(flags[0]==null)
 						flags[0] = new boolean[jis[1].getInitLength()];
 					if (j < tables.length)
 					{
 						for (int k = 0; k < qs[j].size(); k++)
 						{
-							JDBObject obje = ((List<JDBObject>)qs[j]).get(k);
+							AMEFObject obje = ((List<AMEFObject>)qs[j]).get(k);
 							if(flags[j]==null)
 								flags[j] = new boolean[qs[j].size()];
 							boolean condi = (finjndcond.length>j)?evaluate2(objm, obje, finjndcond[j], mps[0], mps[j], aliases[0], aliases[j])
@@ -2093,10 +2094,10 @@ public final class BulkConnection
 										flags[0][i] = true;
 										flags[j][k] = true;
 										jis[1].addObjhJI(jis[0],i);
-										JDBObject jdbo = new JDBObject();
+										AMEFObject jdbo = new AMEFObject();
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 										jis[1].addObjh(jdbo);
@@ -2138,10 +2139,10 @@ public final class BulkConnection
 										{
 											flags[0][i] = true;		
 											jis[1].addObjhJI(jis[0],i);
-											JDBObject jdbo = new JDBObject();	
+											AMEFObject jdbo = new AMEFObject();	
 											for (int l = 0; l < obje.getPackets().size(); l++)
 											{							
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(obje.getPackets().get(l).getType()));
 											}
 											jis[1].addObjh(jdbo);
@@ -2151,10 +2152,10 @@ public final class BulkConnection
 										{
 											flags[j][k] = true;
 											jis[1].addObjhJINull(jis[0],i);
-											JDBObject jdbo = new JDBObject();	
+											AMEFObject jdbo = new AMEFObject();	
 											for (int l = 0; l < obje.getPackets().size(); l++)
 											{							
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(obje.getPackets().get(l).getType()));
 											}										
 											jis[1].addObjh(jdbo);
@@ -2188,10 +2189,10 @@ public final class BulkConnection
 			}
 			if(aggr || imaginaryaggr)
 			{	
-				JDBObject objkm = new JDBObject();
+				AMEFObject objkm = new AMEFObject();
 				for (int k = 0; k < jis[0].getLength(); k++)
 				{
-					JDBObject objm = jis[0].getObj(k);
+					AMEFObject objm = jis[0].getObj(k);
 					for (int tt1 = 0; tt1 < qpartz.length; tt1++)
 					{
 						for (int tt = 0; tt < qpartz[tt1].length; tt++)
@@ -2219,7 +2220,7 @@ public final class BulkConnection
 						if(dl++<limit)
 						{
 							Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();					
-							q.add(JdbResources.getEncoder().encodeWL((JDBObject)(entry.getValue().count),true));
+							q.add(AMEFResources.getEncoder().encodeWL((AMEFObject)(entry.getValue().count),true));
 						}
 						else break;
 					}
@@ -2227,7 +2228,7 @@ public final class BulkConnection
 				}
 				for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 				{
-					JDBObject obh = new JDBObject();
+					AMEFObject obh = new AMEFObject();
 					Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();
 					Map mpss = new HashMap<String,Object>();
 					Map mpst = new HashMap<String,Character>();
@@ -2236,7 +2237,7 @@ public final class BulkConnection
 						Map.Entry<Object,AggInfo> entry1 = (Map.Entry<Object,AggInfo>)iter1.next();
 						if(mps[0].get((String)entry1.getKey())!=null)
 						{
-							JDBObject objt = (JDBObject)entry.getKey();
+							AMEFObject objt = (AMEFObject)entry.getKey();
 							for (int jj = 0; jj < objt.getPackets().size(); jj++)
 							{
 								if(objt.getPackets().get(jj).getNameStr().equals((String)entry1.getKey()))
@@ -2257,31 +2258,31 @@ public final class BulkConnection
 							{
 								obh.addPacket((entry.getValue().cnt+1)/countss);
 								mpss.put((String)entry1.getKey(),
-										JdbResources.longToByteArray((long)(entry.getValue().cnt+1)/countss,8));
+										AMEFResources.longToByteArray((long)(entry.getValue().cnt+1)/countss,8));
 								mpst.put((String)entry1.getKey(), 'l');
 							}
 							else
 							{
 								obh.addPacket(entry.getValue().cnt+1);
 								mpss.put((String)entry1.getKey(),
-										JdbResources.longToByteArray(entry.getValue().cnt+1,8));
+										AMEFResources.longToByteArray(entry.getValue().cnt+1,8));
 								mpst.put((String)entry1.getKey(), 'l');
 							}
 						}
 						else if(isScalarFuncF((String)entry1.getKey()))
 						{
-							String con = createRow((String)entry1.getKey(), obh, (JDBObject)entry.getKey(), mps[0], false);
+							String con = createRow((String)entry1.getKey(), obh, (AMEFObject)entry.getKey(), mps[0], false);
 							mpss.put((String)entry1.getKey(),
 									obh.getPackets().get(obh.getPackets().size()-1).getValue());
 							mpst.put((String)entry1.getKey(),obh.getPackets().get(obh.getPackets().size()-1).getType());
 						}					
 						else
 						{
-							if(entry1.getValue().count instanceof JDBObject)
+							if(entry1.getValue().count instanceof AMEFObject)
 							{
-								obh.addPacket(((JDBObject)entry1.getValue().count).getPackets().get(0).getTValue());
+								obh.addPacket(((AMEFObject)entry1.getValue().count).getPackets().get(0).getTValue());
 								mpss.put((String)entry1.getKey(),
-										((JDBObject)entry1.getValue().count).getPackets().get(0).getTValue());
+										((AMEFObject)entry1.getValue().count).getPackets().get(0).getTValue());
 							}
 							else
 							{	
@@ -2293,7 +2294,7 @@ public final class BulkConnection
 					}
 					boolean condi = evaluateHv(obh, havcls, mpss, mpst, aggVals);
 					if(condi && dl++<limit)
-						q.add(JdbResources.getEncoder().encodeWL(obh,true));					
+						q.add(AMEFResources.getEncoder().encodeWL(obh,true));					
 				}
 				return;
 			}
@@ -2301,7 +2302,7 @@ public final class BulkConnection
 				limit = jis[0].getLength();
 			for (int o=0;o<(int)limit;o++)
 			{
-				q.add(JdbResources.getEncoder().encodeWL(jis[0].getObj(o), true));
+				q.add(AMEFResources.getEncoder().encodeWL(jis[0].getObj(o), true));
 			}			
 		}
 	}
@@ -2356,7 +2357,7 @@ public final class BulkConnection
 			imaginaryaggr = true;
 		if(qparts[0].equals("*") && !imaginaryaggr)
 		{
-			Collection<JDBObject> qs[] = new Collection[tables.length+1];
+			Collection<AMEFObject> qs[] = new Collection[tables.length+1];
 			Map<String,Integer> mps[] = new HashMap[tables.length+1];
 			mps[tables.length] = new HashMap<String, Integer>();
 			String[] aliases = new String[tables.length],tabns = new String[tables.length];;
@@ -2367,7 +2368,7 @@ public final class BulkConnection
 				if(tables[i].trim().split(" ").length==2)
 					aliases[i] = tables[i].trim().split(" ")[1];
 				Table table = DBManager.getTable("temp", tablen);
-				JDBObject objtab = new JDBObject();		
+				AMEFObject objtab = new AMEFObject();		
 				tabns[i] = table.getName();
 				for (int ii = 0; ii < table.getColumnNames().length; ii++)
 				{
@@ -2379,27 +2380,27 @@ public final class BulkConnection
 				else
 					cond = getConditions(subq, mps[i], aliases[i], table.getName());
 				if(distinct)
-					qs[i] = (HashSet<JDBObject>)selectAMEFObjectsDo("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
+					qs[i] = (HashSet<AMEFObject>)selectAMEFObjectsDo("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
 				else
-					qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
+					qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, qparts, null , cond[0], objtab, tables.length==1,false, grpbycol);
 			}
 			if(tables.length==1)
 			{
 				long dl = 0;
 				if(limit==-1)
 					limit = qs[0].size();
-				for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
+				for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
 				{
 					if(dl++<limit)
-						q.add(JdbResources.getEncoder().encodeWL(iter.next(), true));
+						q.add(AMEFResources.getEncoder().encodeWL(iter.next(), true));
 					else break;
 				}
 				return;
 			}
 			//if(distinct)
-				qs[tables.length] = new HashSet<JDBObject>();
+				qs[tables.length] = new HashSet<AMEFObject>();
 			//else
-			//	qs[tables.length] = new ArrayList<JDBObject>();
+			//	qs[tables.length] = new ArrayList<AMEFObject>();
 			for (int i = 0; i < aliases.length; i++) 
 			{
 				for (int j = 0; j < finjndcond.length; j++) 
@@ -2415,16 +2416,16 @@ public final class BulkConnection
 			while (j < tables.length)
 			{
 				int i = 0;
-				for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();i++)//(int i = 0; i < qs[0].size(); i++)
+				for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();i++)//(int i = 0; i < qs[0].size(); i++)
 				{					
-					JDBObject objm = iter.next();						
+					AMEFObject objm = iter.next();						
 					if(flags[0]==null)
 						flags[0] = new boolean[qs[0].size()];
 					
 					int k = 0;
-					for (Iterator<JDBObject> iter1 = qs[j].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
+					for (Iterator<AMEFObject> iter1 = qs[j].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
 					{
-						JDBObject obje = iter1.next();
+						AMEFObject obje = iter1.next();
 						if(flags[j]==null)
 							flags[j] = new boolean[qs[j].size()];
 						boolean added = false;
@@ -2432,7 +2433,7 @@ public final class BulkConnection
 								:evaluate2(objm, obje, cond[1], mps[0], mps[j], aliases[0], aliases[j]);
 						if(condi || type.equals("left") || type.equals("right") || type.equals("full"))
 						{
-							JDBObject jdbo = new JDBObject();
+							AMEFObject jdbo = new AMEFObject();
 							if(type.equals("") || types[j-1].equals("left"))
 							{
 								if(condi)
@@ -2461,7 +2462,7 @@ public final class BulkConnection
 									}	
 									for (int l = 0; l < obje.getPackets().size(); l++)
 									{							
-										jdbo.addNullPacket(JDBObject.
+										jdbo.addNullPacket(AMEFObject.
 												getEqvNullType(obje.getPackets().get(l).getType()));
 									}
 								}
@@ -2489,12 +2490,12 @@ public final class BulkConnection
 									flags[j][k] = true;
 									for (int l = 0; l < objm.getPackets().size(); l++)
 									{							
-										jdbo.addNullPacket(JDBObject.
+										jdbo.addNullPacket(AMEFObject.
 												getEqvNullType(objm.getPackets().get(l).getType()));
 									}	
 									for (int l = 0; l < obje.getPackets().size(); l++)
 									{							
-										jdbo.addNullPacket(JDBObject.
+										jdbo.addNullPacket(AMEFObject.
 												getEqvNullType(obje.getPackets().get(l).getType()));
 									}
 								}
@@ -2522,7 +2523,7 @@ public final class BulkConnection
 									{
 										flags[0][i] = true;
 										if(added)
-											jdbo = new JDBObject();
+											jdbo = new AMEFObject();
 										for (int l = 0; l < objm.getPackets().size(); l++)
 										{							
 											jdbo.addPacket(objm.getPackets().get(l).getValue(),
@@ -2530,7 +2531,7 @@ public final class BulkConnection
 										}	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 										if(jdbo.getPackets().size()>0)
@@ -2544,15 +2545,15 @@ public final class BulkConnection
 									{
 										flags[j][k] = true;
 										if(added)
-											jdbo = new JDBObject();
+											jdbo = new AMEFObject();
 										for (int l = 0; l < objm.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(objm.getPackets().get(l).getType()));
 										}	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 										if(jdbo.getPackets().size()>0)
@@ -2579,18 +2580,18 @@ public final class BulkConnection
 				qs[0] = qs[tables.length];
 				flags[0] = new boolean[qs[0].size()];
 				//if(distinct)
-					qs[tables.length] = new HashSet<JDBObject>();
+					qs[tables.length] = new HashSet<AMEFObject>();
 				//else
-				//	qs[tables.length] = new ArrayList<JDBObject>();
+				//	qs[tables.length] = new ArrayList<AMEFObject>();
 				j++;
 			}
 			long dl = 0;
 			if(limit==-1)
 				limit = qs[0].size();
-			for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
+			for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
 			{
 				if(dl++<limit)
-					q.add(JdbResources.getEncoder().encodeWL(iter.next(), true));
+					q.add(AMEFResources.getEncoder().encodeWL(iter.next(), true));
 				else break;
 			}
 			//System.out.println(qs[tables.length]);
@@ -2598,7 +2599,7 @@ public final class BulkConnection
 		else
 		{			
 			int countss = 0;
-			Collection<JDBObject> qs[] = null;
+			Collection<AMEFObject> qs[] = null;
 			if(distinct)
 				qs = new HashSet[tables.length+1];
 			else
@@ -2611,14 +2612,14 @@ public final class BulkConnection
 			String[] cond = null;
 			LinkedHashMap<Object, com.jdb.BulkConnection.AggInfo> aggVals = null;
 			LinkedHashMap<Object, com.jdb.BulkConnection.AggInfo> rowVals = null;
-			JDBObject[] objtbs = new JDBObject[tables.length];
+			AMEFObject[] objtbs = new AMEFObject[tables.length];
 			boolean aggr = false;
 			for (int i = 0; i < tables.length; i++)
 			{
 				String tablen = tables[i].trim().split(" ")[0];
 				Table table = DBManager.getTable("temp", tablen);
 				tabns[i] = table.getName();
-				JDBObject objtab = new JDBObject();		
+				AMEFObject objtab = new AMEFObject();		
 				for (int ii = 0; ii < table.getColumnNames().length; ii++)
 				{
 					objtab.addPacket(table.getColumnTypes()[ii],table.getColumnNames()[ii]);
@@ -2963,9 +2964,9 @@ public final class BulkConnection
 					}
 					qpartz[i] = qprts.toArray(new String[qprts.size()]);
 					if(distinct)
-						qs[i] = (HashSet<JDBObject>)selectAMEFObjectsDo("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
+						qs[i] = (HashSet<AMEFObject>)selectAMEFObjectsDo("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
 					else
-						qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
+						qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, (aggr && tables.length>1)?new String[]{}:qpartz[i], null , cond[0], objtab, aggr?tables.length>1:tables.length==1, aggr, grpbycol);
 				}
 				else
 				{
@@ -2975,9 +2976,9 @@ public final class BulkConnection
 						cond = getConditions(subq, mps[i], aliases[i],table.getName());
 					qpartz[i] = new String[]{"count(*)"};
 					if(distinct)
-						qs[i] = (HashSet<JDBObject>)selectAMEFObjectsDo("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
+						qs[i] = (HashSet<AMEFObject>)selectAMEFObjectsDo("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
 					else
-						qs[i] = (ArrayList<JDBObject>)selectAMEFObjectso("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
+						qs[i] = (ArrayList<AMEFObject>)selectAMEFObjectso("temp", table, tables.length==1?new String[]{"count(*)"}:new String[]{}, null , cond[0], objtab, true, false, grpbycol);
 				}
 			}
 			mps[tables.length] = new HashMap<String, Integer>();
@@ -2992,34 +2993,34 @@ public final class BulkConnection
 				if(imaginaryaggr)
 				{
 					int k = 0;
-					JDBObject obje = new JDBObject();
-					for (Iterator<JDBObject> iter1 = qs[0].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
+					AMEFObject obje = new AMEFObject();
+					for (Iterator<AMEFObject> iter1 = qs[0].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
 					{
-						JDBObject objm = iter1.next();
+						AMEFObject objm = iter1.next();
 						createRow("count(*)", objm, obje, aggVals, mps[0],mpt[0],mps[0],mpt[0],grpbycol,rowVals,tables[0],tables[0]);
 					}
 					qs[0].clear();
 					for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 					{
 						Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();					
-						qs[0].add((JDBObject)(entry.getValue().count));
+						qs[0].add((AMEFObject)(entry.getValue().count));
 					}
 				}
 				long dl = 0;
 				if(limit==-1)
 					limit = qs[0].size();
-				for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
+				for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
 				{
 					if(dl++<limit)
-						q.add(JdbResources.getEncoder().encodeWL(iter.next(), true));
+						q.add(AMEFResources.getEncoder().encodeWL(iter.next(), true));
 					else break;
 				}
 				return;
 			}
 			if(distinct)
-				qs[tables.length] = new HashSet<JDBObject>();
+				qs[tables.length] = new HashSet<AMEFObject>();
 			else
-				qs[tables.length] = new ArrayList<JDBObject>();
+				qs[tables.length] = new ArrayList<AMEFObject>();
 			boolean[][] flags = new boolean[tables.length][]; 
 			int i = 0;
 			cond = getConditionsf(subq, mpf, aliases, tabns);
@@ -3086,18 +3087,18 @@ public final class BulkConnection
 			while (j < tables.length)
 			{
 				i = 0;				
-				for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();i++)//(int i = 0; i < qs[0].size(); i++)
+				for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();i++)//(int i = 0; i < qs[0].size(); i++)
 				{					
-					JDBObject objm = iter.next();						
+					AMEFObject objm = iter.next();						
 					if(flags[0]==null)
 						flags[0] = new boolean[qs[0].size()];
 					if (j < tables.length)
 					{
 						int k = 0;
-						for (Iterator<JDBObject> iter1 = qs[j].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
+						for (Iterator<AMEFObject> iter1 = qs[j].iterator();iter1.hasNext();k++)//(int k = 0; k < qs[j].size(); k++)
 						{
 
-							JDBObject obje = iter1.next();
+							AMEFObject obje = iter1.next();
 							if(flags[j]==null)
 								flags[j] = new boolean[qs[j].size()];
 							boolean added = false;
@@ -3106,7 +3107,7 @@ public final class BulkConnection
 							//boolean condi = evaluate2(objm, obje, cond[1], mps[0], mps[j], aliases[0], aliases[j]);//(tables.length==2)?evaluate2(objm, obje, cond[1], mps[0], mps[j], aliases[0], aliases[j]):true;
 							if(condi || type.equals("left") || type.equals("right") || type.equals("full"))
 							{
-								JDBObject jdbo = new JDBObject();
+								AMEFObject jdbo = new AMEFObject();
 								if(type.equals("") || types[j-1].equals("left"))
 								{
 									if(condi)
@@ -3135,7 +3136,7 @@ public final class BulkConnection
 										}	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 									}
@@ -3163,12 +3164,12 @@ public final class BulkConnection
 										flags[j][k] = true;
 										for (int l = 0; l < objm.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(objm.getPackets().get(l).getType()));
 										}	
 										for (int l = 0; l < obje.getPackets().size(); l++)
 										{							
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 													getEqvNullType(obje.getPackets().get(l).getType()));
 										}
 									}
@@ -3196,7 +3197,7 @@ public final class BulkConnection
 										{
 											flags[0][i] = true;
 											if(added)
-												jdbo = new JDBObject();
+												jdbo = new AMEFObject();
 											for (int l = 0; l < objm.getPackets().size(); l++)
 											{							
 												jdbo.addPacket(objm.getPackets().get(l).getValue(),
@@ -3204,7 +3205,7 @@ public final class BulkConnection
 											}	
 											for (int l = 0; l < obje.getPackets().size(); l++)
 											{							
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(obje.getPackets().get(l).getType()));
 											}
 											if(jdbo.getPackets().size()>0)
@@ -3218,15 +3219,15 @@ public final class BulkConnection
 										{
 											flags[j][k] = true;
 											if(added)
-												jdbo = new JDBObject();
+												jdbo = new AMEFObject();
 											for (int l = 0; l < objm.getPackets().size(); l++)
 											{							
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(objm.getPackets().get(l).getType()));
 											}	
 											for (int l = 0; l < obje.getPackets().size(); l++)
 											{							
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(obje.getPackets().get(l).getType()));
 											}
 											if(jdbo.getPackets().size()>0)
@@ -3241,14 +3242,14 @@ public final class BulkConnection
 									qs[tables.length].add(jdbo);
 							}
 						
-							/*JDBObject obje = iter1.next();
+							/*AMEFObject obje = iter1.next();
 							if(flags[j]==null)
 								flags[j] = new boolean[qs[j].size()];
 							boolean added = false;
 							boolean condi = evaluate(objm, obje, cond[1], mps[0], mps[j], tabns[0], tabns[j]);
 							if(condi || type.equals("left") || type.equals("right") || type.equals("full"))
 							{							
-								JDBObject jdbo = new JDBObject();
+								AMEFObject jdbo = new AMEFObject();
 								if(type.equals("left") || type.equals(""))
 								{
 									if(condi)
@@ -3313,7 +3314,7 @@ public final class BulkConnection
 											String cond1 = qpartz[j][tt];
 											//if(cond1.indexOf(".")!=-1)
 											//	cond1 = cond1.split("\\.")[1];
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(obje.getPackets().get(mps[j].get(cond1)).getType()));
 										}
 									}
@@ -3366,7 +3367,7 @@ public final class BulkConnection
 											String cond1 = qpartz[0][tt];
 											//if(cond1.indexOf(".")!=-1)
 											//	cond1 = cond1.split("\\.")[1];
-											jdbo.addNullPacket(JDBObject.
+											jdbo.addNullPacket(AMEFObject.
 														getEqvNullType(objm.getPackets().get(mps[0].get(cond1)).getType()));
 										}
 										for (int tt = 0; tt < qpartz[j].length; tt++)
@@ -3432,7 +3433,7 @@ public final class BulkConnection
 										{
 											flags[0][i] = true;
 											if(added)
-												jdbo = new JDBObject();
+												jdbo = new AMEFObject();
 											for (int tt = 0; tt < qpartz[0].length; tt++)
 											{	
 												if(isScalarFunc(qpartz[0][tt], objtbs[0], tabns[0]))
@@ -3454,7 +3455,7 @@ public final class BulkConnection
 												String cond1 = qpartz[j][tt];
 												//if(cond1.indexOf(".")!=-1)
 												//	cond1 = cond1.split("\\.")[1];
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 															getEqvNullType(obje.getPackets().get(mps[j].get(cond1)).getType()));
 											}
 											if(jdbo.getPackets().size()>0)
@@ -3468,13 +3469,13 @@ public final class BulkConnection
 										{
 											flags[j][k] = true;
 											if(added)
-												jdbo = new JDBObject();
+												jdbo = new AMEFObject();
 											for (int tt = 0; tt < qpartz[0].length; tt++)
 											{	
 												String cond1 = qpartz[0][tt];
 												//if(cond1.indexOf(".")!=-1)
 												//	cond1 = cond1.split("\\.")[1];
-												jdbo.addNullPacket(JDBObject.
+												jdbo.addNullPacket(AMEFObject.
 															getEqvNullType(obje.getPackets().get(mps[0].get(cond1)).getType()));
 											}
 											for (int tt = 0; tt < qpartz[j].length; tt++)
@@ -3526,16 +3527,16 @@ public final class BulkConnection
 				qs[0] = qs[tables.length];
 				flags[0] = new boolean[qs[0].size()];
 				if(distinct)
-					qs[tables.length] = new HashSet<JDBObject>();
+					qs[tables.length] = new HashSet<AMEFObject>();
 				else
-					qs[tables.length] = new ArrayList<JDBObject>();
+					qs[tables.length] = new ArrayList<AMEFObject>();
 				j++;
 			}
 			if(aggr)
 			{	
-				for (Iterator<JDBObject> iter1 = qs[0].iterator();iter1.hasNext();)//(int k = 0; k < qs[j].size(); k++)
+				for (Iterator<AMEFObject> iter1 = qs[0].iterator();iter1.hasNext();)//(int k = 0; k < qs[j].size(); k++)
 				{
-					JDBObject objm = iter1.next();
+					AMEFObject objm = iter1.next();
 					//boolean condi = evaluate(objm, objm, cond[1], mps[0], mps[0], aliases[0], aliases[0]);
 					//if(!condi)continue;
 					for (int tt1 = 0; tt1 < qpartz.length; tt1++)
@@ -3558,7 +3559,7 @@ public final class BulkConnection
 				qs[0].clear();
 				for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 				{
-					JDBObject obh = new JDBObject();
+					AMEFObject obh = new AMEFObject();
 					Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();
 					Map mpss = new HashMap<String,Object>();
 					Map mpst = new HashMap<String,Character>();
@@ -3567,7 +3568,7 @@ public final class BulkConnection
 						Map.Entry<Object,AggInfo> entry1 = (Map.Entry<Object,AggInfo>)iter1.next();
 						if(mps[0].get((String)entry1.getKey())!=null)
 						{
-							JDBObject objt = (JDBObject)entry.getKey();
+							AMEFObject objt = (AMEFObject)entry.getKey();
 							for (int jj = 0; jj < objt.getPackets().size(); jj++)
 							{
 								if(objt.getPackets().get(jj).getNameStr().equals((String)entry1.getKey()))
@@ -3588,20 +3589,20 @@ public final class BulkConnection
 							{
 								obh.addPacket((entry.getValue().cnt+1)/countss);
 								mpss.put((String)entry1.getKey(),
-										JdbResources.longToByteArray((long)(entry.getValue().cnt+1)/countss,8));
+										AMEFResources.longToByteArray((long)(entry.getValue().cnt+1)/countss,8));
 								mpst.put((String)entry1.getKey(), 'l');
 							}
 							else
 							{
 								obh.addPacket(entry.getValue().cnt+1);
 								mpss.put((String)entry1.getKey(),
-										JdbResources.longToByteArray(entry.getValue().cnt+1,8));
+										AMEFResources.longToByteArray(entry.getValue().cnt+1,8));
 								mpst.put((String)entry1.getKey(), 'l');
 							}
 						}
 						else if(isScalarFuncF((String)entry1.getKey()))
 						{
-							String con = createRow((String)entry1.getKey(), obh, (JDBObject)entry.getKey(), mps[0], false);
+							String con = createRow((String)entry1.getKey(), obh, (AMEFObject)entry.getKey(), mps[0], false);
 							mpss.put((String)entry1.getKey(),
 									obh.getPackets().get(obh.getPackets().size()-1).getValue());
 							mpst.put((String)entry1.getKey(),obh.getPackets().get(obh.getPackets().size()-1).getType());
@@ -3623,23 +3624,23 @@ public final class BulkConnection
 				for (Iterator iter = rowVals.entrySet().iterator(); iter.hasNext();)
 				{
 					Map.Entry<Object,AggInfo> entry = (Map.Entry<Object,AggInfo>)iter.next();					
-					qs[0].add((JDBObject)(entry.getValue().count));
+					qs[0].add((AMEFObject)(entry.getValue().count));
 				}
 			}
 			long dl = 0;
 			if(limit==-1)
 				limit = qs[0].size();
-			for (Iterator<JDBObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
+			for (Iterator<AMEFObject> iter = qs[0].iterator();iter.hasNext();)//(int i = 0; i < qs[tables.length].size(); i++)
 			{
 				if(dl++<limit)
-					q.add(JdbResources.getEncoder().encodeWL(iter.next(), true));
+					q.add(AMEFResources.getEncoder().encodeWL(iter.next(), true));
 				else break;
 			}
 			//System.out.println(qs[tables.length]);
 		}
 	}
 	
-	private boolean isScalarFunc(String cond,JDBObject objtab, String table)
+	private boolean isScalarFunc(String cond,AMEFObject objtab, String table)
 	{
 		if(cond.indexOf(".")==-1)
 			table = "";
@@ -3684,7 +3685,7 @@ public final class BulkConnection
 		return false;
 	}
 	
-	private boolean checkColumnExists(String cond,JDBObject objtab, String table)
+	private boolean checkColumnExists(String cond,AMEFObject objtab, String table)
 	{
 		if(cond.indexOf(".")==-1)
 			table = "";
@@ -3765,12 +3766,12 @@ public final class BulkConnection
 	}
 	
 	
-	private Object getKey1(JDBObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
+	private Object getKey1(AMEFObject objm, String grpbycol, String colnam, Map<String, Integer> mp, String type)
 	{
 		return colnam+type;
 	}
 	
-	private Object getKey(JDBObject objm, JDBObject objm1 ,String grpbycol, String colnam, Map<String, Integer> mp1, Map<String, Integer> mp2,String type, String table, String table1)
+	private Object getKey(AMEFObject objm, AMEFObject objm1 ,String grpbycol, String colnam, Map<String, Integer> mp1, Map<String, Integer> mp2,String type, String table, String table1)
 	{
 		if(grpbycol==null || grpbycol.equals(""))
 			return colnam+type;
@@ -3804,7 +3805,7 @@ public final class BulkConnection
 		else
 		{
 			String[] grbcs = grpbycol.split(",");
-			JDBObject obj = new JDBObject();
+			AMEFObject obj = new AMEFObject();
 			for (int i = 0; i < grbcs.length; i++)
 			{
 				if(mp1.get(grbcs[i])!=null)
@@ -3845,7 +3846,7 @@ public final class BulkConnection
 	}
 	
 	
-	private String createRow(String cond,JDBObject obh1,JDBObject obh, Map<String, Integer> valInd, boolean b) throws Exception
+	private String createRow(String cond,AMEFObject obh1,AMEFObject obh, Map<String, Integer> valInd, boolean b) throws Exception
 	{			
 		if(cond.equalsIgnoreCase("sysdate()"))
 		{
@@ -4073,7 +4074,7 @@ public final class BulkConnection
 		return "";
 	}
 	
-	private boolean createRow(String cond,JDBObject objm,JDBObject objm1,Map<Object, AggInfo> aggVals,
+	private boolean createRow(String cond,AMEFObject objm,AMEFObject objm1,Map<Object, AggInfo> aggVals,
 			Map<String, Integer> mp, Map<String, String> mpt,Map<String, Integer> mp2, Map<String, String> mpt2,
 			String grpbycol, Map<Object, AggInfo> rowVals, String table, String table1)
 	{
@@ -4093,7 +4094,7 @@ public final class BulkConnection
 							'l'));
 				for(int t=0;t<objm1.getPackets().size();t++)
 					objm.addPacket(objm1.getPackets().get(t).getValue(), objm1.getPackets().get(t).getType());
-				rowVals.put(key, new AggInfo<JDBObject>(colnam,"count",objm,cond,
+				rowVals.put(key, new AggInfo<AMEFObject>(colnam,"count",objm,cond,
 								null,
 								'l'));
 			}
@@ -4102,7 +4103,7 @@ public final class BulkConnection
 				rowVals.get(key).incAvg();
 				Object key1 = cond;//getKey1(objm, grpbycol, colnam,mp,"count");	
 				if(aggVals.get(key1)==null)
-					aggVals.put(key1, new AggInfo<JDBObject>(colnam,"count",objm,cond,
+					aggVals.put(key1, new AggInfo<AMEFObject>(colnam,"count",objm,cond,
 							null,
 							'l'));
 			}
@@ -4339,7 +4340,7 @@ public final class BulkConnection
 	
 	
 	
-	private boolean createRowMT(String cond,JDBObject objm,JDBObject objm1,Map<Object, AggInfo> aggVals,
+	private boolean createRowMT(String cond,AMEFObject objm,AMEFObject objm1,Map<Object, AggInfo> aggVals,
 			Map<String, Integer> mp, Map<String, String> mpt,Map<String, Integer> mp2, Map<String, String> mpt2,
 			String grpbycol, Map<Object, AggInfo> rowVals, String table, String table1)
 	{
@@ -4357,7 +4358,7 @@ public final class BulkConnection
 							'l'));
 				for(int t=0;t<objm1.getPackets().size();t++)
 					objm.addPacket(objm1.getPackets().get(t).getValue(), objm1.getPackets().get(t).getType());
-				rowVals.put(key, new AggInfo<JDBObject>(colnam,"count",objm,cond,
+				rowVals.put(key, new AggInfo<AMEFObject>(colnam,"count",objm,cond,
 								null,
 								'l'));
 			}
@@ -4366,7 +4367,7 @@ public final class BulkConnection
 				rowVals.get(key).incAvg();
 				Object key1 = getKey1(objm, grpbycol, colnam,mp,"count");	
 				if(aggVals.get(key1)==null)
-					aggVals.put(key1, new AggInfo<JDBObject>(colnam,"count",objm,cond,
+					aggVals.put(key1, new AggInfo<AMEFObject>(colnam,"count",objm,cond,
 							null,
 							'l'));
 			}
@@ -4606,7 +4607,7 @@ public final class BulkConnection
 	
 	
 	
-	/*private void createRow(String cond,JDBObject objm,JDBObject jdbo,Map<byte[], AggInfo> aggVals,Map<String,Integer> mps)
+	/*private void createRow(String cond,AMEFObject objm,AMEFObject jdbo,Map<byte[], AggInfo> aggVals,Map<String,Integer> mps)
 	{
 		if(cond.indexOf("count(")!=-1)
 		{
@@ -4647,7 +4648,7 @@ public final class BulkConnection
 				{
 					long cnt = (Long)(aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count);
 					aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count 
-						= cnt + JdbResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
+						= cnt + AMEFResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
 				}
 				else
 				{
@@ -4675,7 +4676,7 @@ public final class BulkConnection
 				if(objm.getPackets().get(mps.get(colnam)).isNumber())
 				{
 					long cnt = (Long)(aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count);
-					long curr = JdbResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
+					long curr = AMEFResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
 					if(curr>cnt)
 						aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count = curr;
 				}
@@ -4719,7 +4720,7 @@ public final class BulkConnection
 				if(objm.getPackets().get(mps.get(colnam)).isNumber())
 				{
 					long cnt = (Long)(aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count);
-					long curr = JdbResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
+					long curr = AMEFResources.byteArrayToLong(objm.getPackets().get(mps.get(colnam)).getValue());
 					if(curr<cnt)
 						aggVals.get(objm.getPackets().get(mps.get(colnam)).getValue()).count = curr;
 				}
@@ -4843,8 +4844,8 @@ public final class BulkConnection
 			String[] qparts,Queue<Object> q, String subq, boolean distinct)
 	{
 		Table table = DBManager.getTable(dbname, tableName);
-		JDBObject objtab = new JDBObject();
-		JDBObject objtab1 = new JDBObject();
+		AMEFObject objtab = new AMEFObject();
+		AMEFObject objtab1 = new AMEFObject();
 		
 		for (int i = 0; i < table.getColumnNames().length; i++)
 		{
@@ -4856,7 +4857,7 @@ public final class BulkConnection
 		}
 		try
 		{
-			//q.add(JdbResources.getEncoder().encodeB(objtab, false));
+			//q.add(AMEFResources.getEncoder().encodeB(objtab, false));
 			if(qparts.length>0 && objtab1.getPackets().size()==0)
 			{
 				for (int i = 0; i < qparts.length; i++)
@@ -4864,7 +4865,7 @@ public final class BulkConnection
 					objtab1.addPacket(i,qparts[i]);
 				}
 			}
-			//q.add(JdbResources.getEncoder().encodeB(objtab1, false));
+			//q.add(AMEFResources.getEncoder().encodeB(objtab1, false));
 			if(table.getRecords()==0)
 			{
 				q.add("DONE");
@@ -4909,8 +4910,8 @@ public final class BulkConnection
 			String[] qparts,Queue<Object> q, String subq, boolean distinct)
 	{
 		Table table = DBManager.getTable(dbname, tableName);
-		JDBObject objtab = new JDBObject();
-		JDBObject objtab1 = new JDBObject();
+		AMEFObject objtab = new AMEFObject();
+		AMEFObject objtab1 = new AMEFObject();
 		
 		for (int i = 0; i < table.getColumnNames().length; i++)
 		{
@@ -4922,7 +4923,7 @@ public final class BulkConnection
 		}
 		try
 		{
-			q.add(JdbResources.getEncoder().encodeB(objtab, false));
+			q.add(AMEFResources.getEncoder().encodeB(objtab, false));
 			if(qparts.length>0 && objtab1.getPackets().size()==0)
 			{
 				for (int i = 0; i < qparts.length; i++)
@@ -4930,7 +4931,7 @@ public final class BulkConnection
 					objtab1.addPacket(i,qparts[i]);
 				}
 			}
-			q.add(JdbResources.getEncoder().encodeB(objtab1, false));
+			q.add(AMEFResources.getEncoder().encodeB(objtab1, false));
 			if(table.getRecords()==0)
 			{
 				q.add("DONE");
@@ -4972,8 +4973,8 @@ public final class BulkConnection
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<JDBObject> selectAMEFObjectso(String dbname,Table table,
-			String[] qparts,Queue<Object> q, String subq, JDBObject objtab,boolean one, boolean aggr, String grpbycol)
+	public List<AMEFObject> selectAMEFObjectso(String dbname,Table table,
+			String[] qparts,Queue<Object> q, String subq, AMEFObject objtab,boolean one, boolean aggr, String grpbycol)
 	{
 		
 		long st1 = System.currentTimeMillis();
@@ -4985,12 +4986,12 @@ public final class BulkConnection
 			//workerThreadPool.execute(future);
 			//futures[i] = future;
 		}
-		List<JDBObject> rec = null;
+		List<AMEFObject> rec = null;
 		for (int i = 0; i < table.getAlgo(); i++)
 		{
 			try
 			{
-				//rec = (List<JDBObject>)futures[i].get();
+				//rec = (List<AMEFObject>)futures[i].get();
 				//System.out.println("Number of records in file = "+rec);
 			}
 			catch (Exception e)
@@ -5000,15 +5001,15 @@ public final class BulkConnection
 			}
 		}
 		JdbSearcher searcher = new JdbSearcher(subq, q, table, 1, objtab, true, qparts, false, one, aggr, grpbycol);
-		rec = (List<JDBObject>)searcher.call();
+		rec = (List<AMEFObject>)searcher.call();
 		workerThreadPool.shutdown();
 		//System.out.println("Time reqd to complete srch thrd file routines = "+(System.currentTimeMillis()-st1));
 		return rec;
 	}
 	
 	
-	public Set<JDBObject> selectAMEFObjectsDo(String dbname,Table table,
-			String[] qparts,Queue<Object> q, String subq, JDBObject objtab,boolean one, boolean aggr, String grpbycol)
+	public Set<AMEFObject> selectAMEFObjectsDo(String dbname,Table table,
+			String[] qparts,Queue<Object> q, String subq, AMEFObject objtab,boolean one, boolean aggr, String grpbycol)
 	{
 		
 		long st1 = System.currentTimeMillis();
@@ -5020,12 +5021,12 @@ public final class BulkConnection
 			//workerThreadPool.execute(future);
 			//futures[i] = future;
 		}
-		Set<JDBObject> rec = null;
+		Set<AMEFObject> rec = null;
 		for (int i = 0; i < table.getAlgo(); i++)
 		{
 			try
 			{
-				//rec = (Set<JDBObject>)futures[i].get();
+				//rec = (Set<AMEFObject>)futures[i].get();
 				//System.out.println("Number of records in file = "+rec);
 			}
 			catch (Exception e)
@@ -5083,15 +5084,15 @@ public final class BulkConnection
 		}
 		return true;
 	}
-	public boolean insert(String dbname,String tableName,JDBObject row,int id) throws AMEFEncodeException
+	public boolean insert(String dbname,String tableName,AMEFObject row,int id) throws AMEFEncodeException
 	{	
 		if(flusher!=null && flusher.belongsTo(tableName))
-			flusher.writepk(JdbResources.getEncoder().encodeWL(row, true),id);
+			flusher.writepk(AMEFResources.getEncoder().encodeWL(row, true),id);
 		else
 		{
 			table = DBManager.getTable(dbname, tableName);
 			flusher.setStreamDetails(table);
-			flusher.writepk(JdbResources.getEncoder().encodeWL(row, true),id);
+			flusher.writepk(AMEFResources.getEncoder().encodeWL(row, true),id);
 		}
 		return true;
 	}
@@ -5106,11 +5107,11 @@ public final class BulkConnection
 	}
 	
 	
-	public boolean insert(String dbname,String tableName,JDBObject row)
+	public boolean insert(String dbname,String tableName,AMEFObject row)
 	{
 		try
 		{
-			insert(dbname, tableName, JdbResources.getEncoder().encodeWL(row,true));
+			insert(dbname, tableName, AMEFResources.getEncoder().encodeWL(row,true));
 		}
 		catch (AMEFEncodeException e)
 		{
@@ -5132,7 +5133,7 @@ public final class BulkConnection
 		}
 	}
 	
-	public void bulkInsert(String dbname,String tableName,List<JDBObject> rows)
+	public void bulkInsert(String dbname,String tableName,List<AMEFObject> rows)
 	{
 		if(flusher!=null && flusher.belongsTo(tableName))
 		{}
@@ -5166,10 +5167,10 @@ public final class BulkConnection
 				for (int j = 0; j < last; j++)
 				{
 					if(idIndex!=-1)
-						flusher.writepk(JdbResources.getEncoder().encodeWL(rows.get(j+i*num),true)
-								,JdbResources.byteArrayToLong(rows.get(j+i*num).getPackets().get(idIndex).getValue()));
+						flusher.writepk(AMEFResources.getEncoder().encodeWL(rows.get(j+i*num),true)
+								,AMEFResources.byteArrayToLong(rows.get(j+i*num).getPackets().get(idIndex).getValue()));
 					else
-						flusher.write(JdbResources.getEncoder().encodeWL(rows.get(j+i*num),true));
+						flusher.write(AMEFResources.getEncoder().encodeWL(rows.get(j+i*num),true));
 				}
 				int index = table.getFileIndexToInsert();
 				flusher.flushIt(index);
@@ -5184,7 +5185,7 @@ public final class BulkConnection
 	public void update(String dbname,String tablen,Map<String,byte[]> nvalues,String where) throws Exception
 	{
 		Table table = DBManager.getTable("temp", tablen);
-		JDBObject objtab = new JDBObject();
+		AMEFObject objtab = new AMEFObject();
 		for (int i = 0; i < table.getColumnNames().length; i++)
 		{
 			objtab.addPacket(table.getColumnTypes()[i],table.getColumnNames()[i]);
@@ -5236,8 +5237,8 @@ public final class BulkConnection
 	{
 			Table table = DBManager.getTable(dbname, tableName);
 	
-			JDBObject objtab = new JDBObject();
-			JDBObject objtab1 = new JDBObject();
+			AMEFObject objtab = new AMEFObject();
+			AMEFObject objtab1 = new AMEFObject();
 			
 			for (int i = 0; i < table.getColumnNames().length; i++)
 			{
@@ -5249,8 +5250,8 @@ public final class BulkConnection
 			}
 			try
 			{
-				//q.add(JdbResources.getEncoder().encodeB(objtab, false));
-				byte[] encData = JdbResources.getEncoder().encodeB(objtab, false);
+				//q.add(AMEFResources.getEncoder().encodeB(objtab, false));
+				byte[] encData = AMEFResources.getEncoder().encodeB(objtab, false);
 				ByteBuffer buf = ByteBuffer.allocate(encData.length);
 				buf.put(encData);
 				buf.flip();
@@ -5268,8 +5269,8 @@ public final class BulkConnection
 						objtab1.addPacket(i,qparts[i]);
 					}
 				}
-				//q.add(JdbResources.getEncoder().encodeB(objtab1, false));
-				encData = JdbResources.getEncoder().encodeB(objtab, false);
+				//q.add(AMEFResources.getEncoder().encodeB(objtab1, false));
+				encData = AMEFResources.getEncoder().encodeB(objtab, false);
 				buf = ByteBuffer.allocate(encData.length);
 				buf.put(encData);
 				buf.flip();

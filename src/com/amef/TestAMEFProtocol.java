@@ -69,11 +69,11 @@ public class TestAMEFProtocol
 	 */
 	public static void main(String[] args) throws Exception
 	{
-		JDBObject object = new JDBObject();
-		object.addNullPacket(JDBObject.NULL_STRING, "");
+		AMEFObject object = new AMEFObject();
+		object.addNullPacket(AMEFObject.NULL_STRING, "");
 		object.addPacket("asdasD");
-		System.out.println(new String(new JDBEncoder().encodeWL(object, true)));
-		System.out.println(new JDBDecoder().decodeB(new JDBEncoder().encodeWL(object, true), false, true));
+		System.out.println(new String(new AMEFEncoder().encodeWL(object, true)));
+		System.out.println(new AMEFDecoder().decodeB(new AMEFEncoder().encodeWL(object, true), false, true));
 		/*object.addPacket("TransactionCode","NOTIFICATION");
 		object.addPacket("OLC","PublisherApplID");
 		object.addPacket("5","PublisherApplThreadID");

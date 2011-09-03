@@ -15,6 +15,7 @@
 */
 package com.amef;
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -22,8 +23,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.jdb.JdbResources;
-
+import com.amef.AMEFResources;
 
 /**
  * @author sumeet.chhetri
@@ -32,8 +32,13 @@ import com.jdb.JdbResources;
  * can be a string, number, date, boolean, character or any complex object
  * Every message consists of only one JDBObjectNew *
  */
-public final class JDBObject
+public final class AMEFObject implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5016887916429865073L;
+
 	public static final char NULL_STRING = 'a';
 	
 	public static final char NULL_NUMBER = 'g';
@@ -112,8 +117,10 @@ public final class JDBObject
 	/*The Object value in String format*/
 	private byte[] value;
 	
+	public int position;
+	
 	/*The properties of a complex object*/
-	private List<JDBObject> packets;
+	private List<AMEFObject> packets;
 	
 	/**
 	 * @return Array of JDBObjectNew	 
@@ -137,9 +144,9 @@ public final class JDBObject
 			return 0;
 	}
 	
-	public JDBObject[] getObjects()
+	public AMEFObject[] getObjects()
 	{
-		return packets.toArray(new JDBObject[packets.size()]);
+		return packets.toArray(new AMEFObject[packets.size()]);
 	}
 	
 	public void clear()
@@ -148,34 +155,33 @@ public final class JDBObject
 	}
 	
 	/*Create a new AMEF object which will initilaize the values*/
-	public JDBObject()
+	public AMEFObject()
 	{
 		type = OBJECT_TYPE;
 		length = 0;
 		name = "";
-		packets = new ArrayList<JDBObject>();
+		packets = new ArrayList<AMEFObject>();
 	}
 	
-	public void addNullPacket(char type)
+	public AMEFObject addNullPacket(char type)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
-		JDBObjectNew.namedLength += 1;
+		AMEFObject JDBObjectNew = new AMEFObject();
+		JDBObjectNew.namedLength = 1;
 		length += 1;
-		namedLength += 3;
+		namedLength += 1;
 		JDBObjectNew.type = type;
+		JDBObjectNew.length = 1;
 		packets.add(JDBObjectNew);
+		return JDBObjectNew;
 	}
 	
 	public void addNullPacket(char type,String name)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
-		JDBObjectNew.name = name;		
+		AMEFObject JDBObjectNew = addNullPacket(type);
+		JDBObjectNew.name = name;
+		//length += name.length();
 		namedLength += name.length();
-		JDBObjectNew.namedLength += name.length() + 1;
-		length += 1;
-		namedLength += 3;
-		JDBObjectNew.type = type;
-		packets.add(JDBObjectNew);
+		JDBObjectNew.namedLength += name.length();
 	}
 	
 	/**
@@ -185,7 +191,7 @@ public final class JDBObject
 	 */
 	public void addPacket(String string,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(string);
+		AMEFObject JDBObjectNew = addPacket(string);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -195,41 +201,42 @@ public final class JDBObject
 	 * @param string
 	 * Add a String property to an Object
 	 */
-	public JDBObject addPacket(String string)
+	public AMEFObject addPacket(String string)
 	{
-		JDBObject JDBObjectNew = new JDBObject();		
+		AMEFObject JDBObjectNew = new AMEFObject();		
 		JDBObjectNew.name = "";
+		JDBObjectNew.value = string.getBytes();
+		JDBObjectNew.length = JDBObjectNew.value.length;		
 		
-		if(string.length()<=256)
+		if(string.length()<256)
 		{
 			JDBObjectNew.type = STRING_256_TYPE;
-			length += string.length() + 2;
-			namedLength += string.length() + 4;
-			JDBObjectNew.namedLength = string.length() + 2;
+			length += JDBObjectNew.length + 2;
+			namedLength += JDBObjectNew.length + 4;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 2;
 		}
-		else if(string.length()<=65536)
+		else if(string.length()<65536)
 		{
 			JDBObjectNew.type = STRING_65536_TYPE;
-			length += string.length() + 3;
-			namedLength += string.length() + 5;
-			JDBObjectNew.namedLength = string.length() + 3;
+			length += JDBObjectNew.length + 3;
+			namedLength += JDBObjectNew.length + 5;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 3;
 		}
-		else if(string.length()<=16777216)
+		else if(string.length()<16777216)
 		{
 			JDBObjectNew.type = STRING_16777216_TYPE;
-			length += string.length() + 4;
-			namedLength += string.length() + 6;
-			JDBObjectNew.namedLength = string.length() + 4;
+			length += JDBObjectNew.length + 4;
+			namedLength += JDBObjectNew.length + 6;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 4;
 		}
 		else
 		{
 			JDBObjectNew.type = STRING_TYPE;
-			length += string.length() + 5;
-			namedLength += string.length() + 7;
-			JDBObjectNew.namedLength = string.length() + 5;
+			length += JDBObjectNew.length + 5;
+			namedLength += JDBObjectNew.length + 7;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 5;
 		}
-		JDBObjectNew.length = string.length();		
-		JDBObjectNew.value = string.getBytes();
+		
 		packets.add(JDBObjectNew);
 		return JDBObjectNew;
 	}
@@ -241,7 +248,7 @@ public final class JDBObject
 	 */
 	public void addPacket(byte[] string,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(string);
+		AMEFObject JDBObjectNew = addPacket(string);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -251,41 +258,42 @@ public final class JDBObject
 	 * @param string
 	 * Add a String property to an Object
 	 */
-	public JDBObject addPacket(byte[] string)
+	public AMEFObject addPacket(byte[] string)
 	{
-		JDBObject JDBObjectNew = new JDBObject();		
-		JDBObjectNew.name = "";
+		AMEFObject JDBObjectNew = new AMEFObject();		
+		JDBObjectNew.name = "";			
+		JDBObjectNew.value = string;
+		JDBObjectNew.length = JDBObjectNew.value.length;	
 		
-		if(string.length<=256)
+		if(string.length<256)
 		{
 			JDBObjectNew.type = STRING_256_TYPE;
-			length += string.length + 2;
-			namedLength += string.length + 4;
-			JDBObjectNew.namedLength = string.length + 2;
+			length += JDBObjectNew.length + 2;
+			namedLength += JDBObjectNew.length + 4;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 2;
 		}
-		else if(string.length<=65536)
+		else if(string.length<65536)
 		{
 			JDBObjectNew.type = STRING_65536_TYPE;
-			length += string.length + 3;
-			namedLength += string.length + 5;
-			JDBObjectNew.namedLength = string.length + 3;
+			length += JDBObjectNew.length + 3;
+			namedLength += JDBObjectNew.length + 5;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 3;
 		}
-		else if(string.length<=16777216)
+		else if(string.length<16777216)
 		{
 			JDBObjectNew.type = STRING_16777216_TYPE;
-			length += string.length + 4;
-			namedLength += string.length + 6;
-			JDBObjectNew.namedLength = string.length + 4;
+			length += JDBObjectNew.length + 4;
+			namedLength += JDBObjectNew.length + 6;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 4;
 		}
 		else
 		{
 			JDBObjectNew.type = STRING_TYPE;
-			length += string.length + 5;
-			namedLength += string.length + 7;
-			JDBObjectNew.namedLength = string.length + 5;
+			length += JDBObjectNew.length + 5;
+			namedLength += JDBObjectNew.length + 7;
+			JDBObjectNew.namedLength = JDBObjectNew.length + 5;
 		}
-		JDBObjectNew.length = string.length;		
-		JDBObjectNew.value = string;
+		
 		packets.add(JDBObjectNew);
 		return JDBObjectNew;
 	}
@@ -297,7 +305,7 @@ public final class JDBObject
 	 */
 	public void addPacket(boolean bool,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(bool);
+		AMEFObject JDBObjectNew = addPacket(bool);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -307,9 +315,9 @@ public final class JDBObject
 	 * @param bool
 	 * Add a boolean property to an Object
 	 */
-	public JDBObject addPacket(boolean bool)
+	public AMEFObject addPacket(boolean bool)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		JDBObjectNew.type = BOOLEAN_TYPE;
 		JDBObjectNew.name = "";
 		JDBObjectNew.length = 1;
@@ -330,7 +338,7 @@ public final class JDBObject
 	
 	public void addPacket(char chr,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(chr);
+		AMEFObject JDBObjectNew = addPacket(chr);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -340,9 +348,9 @@ public final class JDBObject
 	 * @param bool
 	 * Add a boolean property to an Object
 	 */
-	public JDBObject addPacket(char chr)
+	public AMEFObject addPacket(char chr)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		JDBObjectNew.type = CHAR_TYPE;
 		JDBObjectNew.name = "";
 		JDBObjectNew.length = 1;
@@ -361,7 +369,7 @@ public final class JDBObject
 	 */
 	public void addPacket(long lon,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(lon);
+		AMEFObject JDBObjectNew = addPacket(lon);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -371,13 +379,13 @@ public final class JDBObject
 	 * @param lon
 	 * Add a long property to an Object
 	 */
-	public JDBObject addPacket(long lon)
+	public AMEFObject addPacket(long lon)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		if(lon<256)
 		{
 			JDBObjectNew.type = VERY_SMALL_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 1);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 1);
 			length += 2;
 			namedLength += 4;
 			JDBObjectNew.namedLength  = 2;
@@ -386,7 +394,7 @@ public final class JDBObject
 		else if(lon<65536)
 		{
 			JDBObjectNew.type = SMALL_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 2);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 2);
 			length += 3;
 			namedLength += 5;
 			JDBObjectNew.namedLength  = 3;
@@ -395,7 +403,7 @@ public final class JDBObject
 		else if(lon<16777216)
 		{
 			JDBObjectNew.type = BIG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 3);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 3);
 			length += 4;
 			namedLength += 6;
 			JDBObjectNew.namedLength  = 4;
@@ -404,7 +412,7 @@ public final class JDBObject
 		else if(lon<4294967296L)
 		{
 			JDBObjectNew.type = INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 4);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 4);
 			length += 5;
 			namedLength += 7;
 			JDBObjectNew.namedLength  = 5;
@@ -413,7 +421,7 @@ public final class JDBObject
 		else if(lon<1099511627776L)
 		{
 			JDBObjectNew.type = VS_LONG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 5);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 5);
 			length += 6;
 			namedLength += 8;
 			JDBObjectNew.namedLength  = 6;
@@ -422,7 +430,7 @@ public final class JDBObject
 		else if(lon<281474976710656L)
 		{
 			JDBObjectNew.type = S_LONG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 6);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 6);
 			length += 7;
 			namedLength += 9;
 			JDBObjectNew.namedLength  = 7;
@@ -431,7 +439,7 @@ public final class JDBObject
 		else if(lon<72057594037927936L)
 		{
 			JDBObjectNew.type = B_LONG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 7);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 7);
 			length += 8;
 			namedLength += 10;
 			JDBObjectNew.namedLength  = 8;
@@ -440,7 +448,7 @@ public final class JDBObject
 		else
 		{
 			JDBObjectNew.type = LONG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.longToByteArray(lon, 8);
+			JDBObjectNew.value = AMEFResources.longToByteArray(lon, 8);
 			length += 9;
 			namedLength += 11;
 			JDBObjectNew.namedLength  = 9;
@@ -458,7 +466,7 @@ public final class JDBObject
 	 */
 	public void addPacket(float doub,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(doub);
+		AMEFObject JDBObjectNew = addPacket(doub);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -468,9 +476,9 @@ public final class JDBObject
 	 * @param doub
 	 * Add a double property to an Object
 	 */
-	public JDBObject addPacket(float doub)
+	public AMEFObject addPacket(float doub)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		JDBObjectNew.type = DOUBLE_FLOAT_TYPE;
 		JDBObjectNew.name = "";
 		JDBObjectNew.length = String.valueOf(doub).length();
@@ -490,7 +498,7 @@ public final class JDBObject
 	 */
 	public void addPacket(double doub,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(doub);
+		AMEFObject JDBObjectNew = addPacket(doub);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -500,9 +508,9 @@ public final class JDBObject
 	 * @param doub
 	 * Add a double property to an Object
 	 */
-	public JDBObject addPacket(double doub)
+	public AMEFObject addPacket(double doub)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		JDBObjectNew.type = DOUBLE_FLOAT_TYPE;
 		JDBObjectNew.name = "";
 		JDBObjectNew.length = String.valueOf(doub).length();
@@ -521,7 +529,7 @@ public final class JDBObject
 	 */
 	public void addPacket(int integer,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(integer);
+		AMEFObject JDBObjectNew = addPacket(integer);
 		JDBObjectNew.name = name;
 		//length += name.length();
 		namedLength += name.length();
@@ -531,13 +539,13 @@ public final class JDBObject
 	 * @param integer
 	 * Add an integer property to an Object
 	 */
-	public JDBObject addPacket(int integer)
+	public AMEFObject addPacket(int integer)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		if(integer<256)
 		{
 			JDBObjectNew.type = VERY_SMALL_INT_TYPE;
-			JDBObjectNew.value = JdbResources.intToByteArray(integer, 1);
+			JDBObjectNew.value = AMEFResources.intToByteArray(integer, 1);
 			length += 2;
 			namedLength += 4;
 			JDBObjectNew.namedLength  = 2;
@@ -546,7 +554,7 @@ public final class JDBObject
 		else if(integer<65536)
 		{
 			JDBObjectNew.type = SMALL_INT_TYPE;
-			JDBObjectNew.value = JdbResources.intToByteArray(integer, 2);
+			JDBObjectNew.value = AMEFResources.intToByteArray(integer, 2);
 			length += 3;
 			namedLength += 5;
 			JDBObjectNew.namedLength  = 3;
@@ -555,7 +563,7 @@ public final class JDBObject
 		else if(integer<16777216)
 		{
 			JDBObjectNew.type = BIG_INT_TYPE;
-			JDBObjectNew.value = JdbResources.intToByteArray(integer, 3);
+			JDBObjectNew.value = AMEFResources.intToByteArray(integer, 3);
 			length += 4;
 			namedLength += 6;
 			JDBObjectNew.namedLength  = 4;
@@ -564,7 +572,7 @@ public final class JDBObject
 		else
 		{
 			JDBObjectNew.type = INT_TYPE;
-			JDBObjectNew.value = JdbResources.intToByteArray(integer, 4);
+			JDBObjectNew.value = AMEFResources.intToByteArray(integer, 4);
 			length += 5;
 			namedLength += 7;
 			JDBObjectNew.namedLength  = 5;
@@ -582,7 +590,7 @@ public final class JDBObject
 	 */
 	public void addPacket(Date date,String name)
 	{
-		JDBObject JDBObjectNew = addPacket(date);
+		AMEFObject JDBObjectNew = addPacket(date);
 		JDBObjectNew.name = name;
 		namedLength += name.length();
 		JDBObjectNew.namedLength += name.length();
@@ -591,9 +599,9 @@ public final class JDBObject
 	 * @param date
 	 * Add a Date property to an Object
 	 */
-	public JDBObject addPacket(Date date)
+	public AMEFObject addPacket(Date date)
 	{
-		JDBObject JDBObjectNew = new JDBObject();
+		AMEFObject JDBObjectNew = new AMEFObject();
 		JDBObjectNew.type = DATE_TYPE;
 		JDBObjectNew.name = "";
 		SimpleDateFormat format = new SimpleDateFormat("ddMMyyyy HHmmss");
@@ -612,7 +620,7 @@ public final class JDBObject
 	 * @param packet
 	 * Add a JDBObjectNew property to an Object
 	 */
-	public void addPacket(JDBObject packet)
+	public void addPacket(AMEFObject packet)
 	{
 		packets.add(packet);
 		if(packet.type==OBJECT_TYPE)
@@ -631,7 +639,7 @@ public final class JDBObject
 	}
 	
 	
-	public void set(int i,JDBObject jdbo)
+	public void set(int i,AMEFObject jdbo)
 	{
 		packets.set(i,jdbo); 
 	}
@@ -648,11 +656,11 @@ public final class JDBObject
 		}
 		else if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
-			addPacket(JdbResources.byteArrayToInt(packet));
+			addPacket(AMEFResources.byteArrayToInt(packet));
 		}
 		else if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE)
 		{
-			addPacket(JdbResources.byteArrayToLong(packet));
+			addPacket(AMEFResources.byteArrayToLong(packet));
 		}
 		else if(type==DOUBLE_FLOAT_TYPE)
 		{
@@ -674,14 +682,26 @@ public final class JDBObject
 	
 	public void addPacket(Object obj)
 	{
-		if(obj instanceof Long)
+		if(obj instanceof Long || obj.getClass().toString().equals("long"))
 			addPacket(((Long)obj).longValue());
-		else if(obj instanceof Double)
+		if(obj instanceof Integer || obj.getClass().toString().equals("int"))
+			addPacket(((Integer)obj).intValue());
+		else if(obj instanceof Double || obj.getClass().toString().equals("double"))
 			addPacket(((Double)obj).doubleValue());
 		else if(obj instanceof String)
 			addPacket((String)obj);
-		else if(obj instanceof Byte)
+		else if(obj instanceof Byte || obj.getClass().toString().equals("byte"))
 			addPacket(((Byte)obj).byteValue());
+		else if(obj instanceof Byte[])
+			addPacket(((Byte[])obj));
+		else if(obj instanceof Character || obj.getClass().toString().equals("char"))
+			addPacket(((Character)obj).charValue());
+		else if(obj instanceof Boolean)
+			addPacket(((Boolean)obj).booleanValue() || obj.getClass().toString().equals("boolean"));
+		else if(obj instanceof AMEFObject)
+			addPacket((AMEFObject)obj);
+		else if(obj instanceof byte[])
+			addPacket((byte[])obj);
 	}
 	
 	public int getlength()
@@ -796,6 +816,64 @@ public final class JDBObject
 		return isDate(type);
 	}
 	
+	public int calculateLength()
+	{
+		if(value==null)return 1;
+		int l = value.length;
+		int ind = 0;
+		if(l<256)
+			ind =1;
+		else if(l<65536)
+			ind = 2;
+		else if(l<16777216)
+			ind =3;
+		else if(l<4294967296L)
+			ind =4;
+		else if(l<1099511627776L)
+			ind =5;
+		else if(l<281474976710656L)
+			ind =6;
+		else if(l<72057594037927936L)
+			ind =7;
+		else
+			ind =8;
+		return l + ind + 1;		
+	}
+	
+	public int calculateLengthWN()
+	{
+		if(value==null)return (name!=null?name.length():0) + 3;
+		int l = value.length;
+		int ind = 0;
+		if(l<256)
+			ind =1;
+		else if(l<65536)
+			ind = 2;
+		else if(l<16777216)
+			ind =3;
+		else if(l<4294967296L)
+			ind =4;
+		else if(l<1099511627776L)
+			ind =5;
+		else if(l<281474976710656L)
+			ind =6;
+		else if(l<72057594037927936L)
+			ind =7;
+		else
+			ind =8;
+		return l + ind + 3 + (name!=null?name.length():0);		
+	}
+	
+	public int calcLength(boolean ignoreName)
+	{
+		return (ignoreName?calculateLength():calculateLengthWN());
+	}
+	
+	public int calcLengthMinusMe(boolean ignoreName)
+	{
+		return calcLength(ignoreName) - (ignoreName?0:((name!=null?name.length():0) - 3));
+	}
+	
 	public int getNamedLength(boolean ignoreName)
 	{
 		if(ignoreName)
@@ -815,6 +893,9 @@ public final class JDBObject
 			else
 			{
 				int len = length;
+				if(getType()==NULL_STRING || getType()==NULL_NUMBER
+						|| getType()==NULL_DATE || getType()==NULL_BOOL || getType()==NULL_CHAR)
+						return len;
 				if(getType()!=VERY_SMALL_INT_TYPE && getType()!=SMALL_INT_TYPE && getType()!=BIG_INT_TYPE 
 					&& getType()!=INT_TYPE && getType()!=VS_LONG_INT_TYPE && getType()!=S_LONG_INT_TYPE 
 						&& getType()!=B_LONG_INT_TYPE && getType()!=LONG_INT_TYPE && getType()!=BOOLEAN_TYPE
@@ -822,9 +903,6 @@ public final class JDBObject
 				{
 					len++;
 				}
-				if(getType()==NULL_STRING || getType()==NULL_NUMBER
-					|| getType()==NULL_DATE || getType()==NULL_BOOL || getType()==NULL_CHAR)
-					return len;
 				if(length<256)
 					len++;
 				else if(length<65536)
@@ -839,32 +917,58 @@ public final class JDBObject
 		else
 		{
 			if(getType()==OBJECT_TYPE)
-			{
-				if(2 + namedLength<256)
+			{				
+				namedLength = 1;
+				for (AMEFObject obj : packets) {
+					namedLength += obj.getNamedLength(ignoreName);
+				}
+				
+				if(namedLength<256)
 				{
 					type = VS_OBJECT_TYPE;
-					namedLength += 2;
+					namedLength += 1;
 				}
-				else if(2 + namedLength<65536)
+				else if(namedLength<65536)
 				{
 					type = S_OBJECT_TYPE;
-					namedLength += 3;
+					namedLength += 2;
 				}
-				else if(2 + namedLength<16777216)
+				else if(namedLength<16777216)
 				{
 					type = B_OBJECT_TYPE;
-					namedLength += 4;
+					namedLength += 3;
 				}
 				else
 				{
 					type = OBJECT_TYPE;
-					namedLength += 5;
+					namedLength += 4;
 				}
-				return namedLength;
+				
+				return namedLength + 2;
 			}
-			else if(getType()==VS_OBJECT_TYPE || getType()==B_OBJECT_TYPE || getType()==S_OBJECT_TYPE)
+			else if(getType()==VS_OBJECT_TYPE)
 			{
-				return namedLength;
+				namedLength = 1;
+				for (AMEFObject obj : packets) {
+					namedLength += obj.getNamedLength(ignoreName);
+				}
+				return namedLength + 3;
+			}
+			else if(getType()==S_OBJECT_TYPE)
+			{
+				namedLength = 1;
+				for (AMEFObject obj : packets) {
+					namedLength += obj.getNamedLength(ignoreName);
+				}
+				return namedLength + 4;
+			}
+			else if(getType()==B_OBJECT_TYPE)
+			{
+				namedLength = 1;
+				for (AMEFObject obj : packets) {
+					namedLength += obj.getNamedLength(ignoreName);
+				}
+				return namedLength + 5;
 			}
 			else
 			{
@@ -872,6 +976,17 @@ public final class JDBObject
 			}
 		}
 		
+	}
+	
+	public boolean isObject()
+	{
+		return (type==VS_OBJECT_TYPE || type==S_OBJECT_TYPE
+				||type==B_OBJECT_TYPE || type==OBJECT_TYPE);
+	}
+	
+	public int getNamedLength()
+	{
+		return namedLength;
 	}
 	
 	public void setLength(int length)
@@ -895,11 +1010,11 @@ public final class JDBObject
 	{
 		this.name = new String(name);
 	}
-	public List<JDBObject> getPackets()
+	public List<AMEFObject> getPackets()
 	{
 		return packets;
 	}
-	public void setPackets(List<JDBObject> packets)
+	public void setPackets(List<AMEFObject> packets)
 	{
 		this.packets = packets;
 	}
@@ -920,32 +1035,32 @@ public final class JDBObject
 	public Object getTValue()
 	{
 		if(type==STRING_TYPE || type==STRING_256_TYPE || type==DATE_TYPE || type==STRING_65536_TYPE || type==STRING_16777216_TYPE || type==DOUBLE_FLOAT_TYPE)
-			return value;
-		else if(getType()!=VERY_SMALL_INT_TYPE && getType()!=SMALL_INT_TYPE && getType()!=BIG_INT_TYPE 
-				&& getType()!=INT_TYPE)
+			return new String(value);
+		else if(getType()==VERY_SMALL_INT_TYPE || getType()==SMALL_INT_TYPE || getType()==BIG_INT_TYPE 
+				|| getType()==INT_TYPE)
 		{
 			return getIntValue();
 		}
-		else if(getType()!=VS_LONG_INT_TYPE && getType()!=S_LONG_INT_TYPE 
-					&& getType()!=B_LONG_INT_TYPE && getType()!=LONG_INT_TYPE)
+		else if(getType()==VS_LONG_INT_TYPE || getType()==S_LONG_INT_TYPE 
+				|| getType()==B_LONG_INT_TYPE || getType()==LONG_INT_TYPE)
 		{
 			return getLongValue();
 		}
-		else if(getType()!=BOOLEAN_TYPE)
+		else if(getType()==BOOLEAN_TYPE)
 		{
 			return getBooleanValue();
 		}
-		else if(getType()!=CHAR_TYPE)
+		else if(getType()==CHAR_TYPE)
 		{
 			return (char)value[0];
-		}
+		}	
 		return this;
 	}
 	public String getValueStr()
 	{
-		if(value==null)
-			return null;
+		if(value!=null)
 		return new String(value);
+		return null;
 	}
 	public void setValue(byte[] value)
 	{
@@ -963,7 +1078,7 @@ public final class JDBObject
 	public boolean getBooleanValue()
 	{
 		if(type==BOOLEAN_TYPE)
-			return (value.equals("1")?true:false);
+			return (value!=null && value[0]=='1'?true:false);
 		else
 			return false;
 	}
@@ -975,7 +1090,7 @@ public final class JDBObject
 	{
 		if(type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
-			return JdbResources.byteArrayToInt(value);
+			return AMEFResources.byteArrayToInt(value);
 		}
 		else
 			return -1;
@@ -999,7 +1114,7 @@ public final class JDBObject
 	{
 		if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE)
 		{
-			return JdbResources.byteArrayToLong(value);
+			return AMEFResources.byteArrayToLong(value);
 		}
 		else
 			return -1;
@@ -1010,7 +1125,7 @@ public final class JDBObject
 		if(type==VS_LONG_INT_TYPE || type==S_LONG_INT_TYPE || type==B_LONG_INT_TYPE || type==LONG_INT_TYPE
 			|| type==VERY_SMALL_INT_TYPE || type==SMALL_INT_TYPE || type==BIG_INT_TYPE || type==INT_TYPE)
 		{
-			return JdbResources.byteArrayToLong(value);
+			return AMEFResources.byteArrayToLong(value);
 		}
 		else
 			return -1;
@@ -1035,7 +1150,6 @@ public final class JDBObject
 		else
 			return new Date();
 	}
-	
 	public String toString()
 	{
 		return displayObject("");
@@ -1046,7 +1160,7 @@ public final class JDBObject
 		String displ = "";
 		for (int i=0;i<(int)getPackets().size();i++)
 		{
-			JDBObject obj = getPackets().get(i);		
+			AMEFObject obj = getPackets().get(i);		
 			displ += tab + "Object Type = ";
 			displ += obj.type;
 			displ += "\n" + tab + "Object Name = " + obj.name + "\n";
@@ -1090,7 +1204,7 @@ public final class JDBObject
 		if (this == obj) return true;
 		if (obj == null) return false;
 		if (getClass() != obj.getClass()) return false;
-		final JDBObject other = (JDBObject) obj;
+		final AMEFObject other = (AMEFObject) obj;
 		if (name == null)
 		{
 			if (other.name != null) return false;
@@ -1106,12 +1220,12 @@ public final class JDBObject
 		return true;
 	}
 
-	public void addStaticPacket(JDBObject obj)
+	public void addStaticPacket(AMEFObject obj)
 	{
 		packets.add(obj);
 	}
 	
-	public int compare(JDBObject obj)
+	public int compare(AMEFObject obj)
 	{
 		if(value==null && obj.value!=null)
 			return -1;

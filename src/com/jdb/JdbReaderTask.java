@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import com.amef.AMEFDecodeException;
-import com.amef.JDBDecoder;
-import com.amef.JDBObject;
+import com.amef.AMEFDecoder;
+import com.amef.AMEFObject;
 
 public class JdbReaderTask implements Callable
 {
@@ -38,9 +38,9 @@ public class JdbReaderTask implements Callable
 		this.fileName = fileName;
 		this.startFrom = startFrom;
 	}
-	public List<JDBObject> call() throws Exception
+	public List<AMEFObject> call() throws Exception
 	{
-		List<JDBObject> objects = new ArrayList<JDBObject>(1000000);
+		List<AMEFObject> objects = new ArrayList<AMEFObject>(1000000);
 		int record = 0;
 		RandomAccessFile jdbin = null;
 		try
@@ -55,7 +55,7 @@ public class JdbReaderTask implements Callable
 			}
 			alld = build.toString();
 			reader.close();
-			JDBDecoder decoder = new JDBDecoder();
+			AMEFDecoder decoder = new AMEFDecoder();
 			
 			int pos = 0;
 			while(pos<alld.length())
@@ -65,7 +65,7 @@ public class JdbReaderTask implements Callable
 				int lengthm = ((length.getBytes()[0] & 0xff) << 24) | ((length.getBytes()[1] & 0xff) << 16)
 								| ((length.getBytes()[2] & 0xff) << 8) | ((length.getBytes()[3] & 0xff));
 				String data = alld.substring(pos,pos+lengthm);
-				JDBObject object = decoder.decodeB(data.getBytes(), false, false);
+				AMEFObject object = decoder.decodeB(data.getBytes(), false, false);
 				objects.add(object);			
 				record++;
 				pos = pos + lengthm;
@@ -90,7 +90,7 @@ public class JdbReaderTask implements Callable
 			}
 			for (byte[] bs : alldats)
 			{
-				JDBObject object = decoder.decode(bs, false, false);
+				AMEFObject object = decoder.decode(bs, false, false);
 				objects.add(object);
 			}*/
 		}

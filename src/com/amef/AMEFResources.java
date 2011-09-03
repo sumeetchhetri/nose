@@ -1,3 +1,4 @@
+package com.amef;
 /*
         Copyright 2011, Sumeet Chhetri 
   
@@ -13,47 +14,47 @@
     See the License for the specific language governing permissions and 
     limitations under the License.  
 */
-package com.jdb;
 
-import com.amef.JDBDecoder;
-import com.amef.JDBEncoder;
 
-public final class JdbResources
+import com.amef.AMEFDecoder;
+import com.amef.AMEFEncoder;
+
+public final class AMEFResources
 {
-	private JdbResources()
+	private AMEFResources()
 	{
-		encoder = new JDBEncoder();
-		decoder = new JDBDecoder();
+		encoder = new AMEFEncoder();
+		decoder = new AMEFDecoder();
 	}
-	private volatile static JdbResources jdbResources;
+	private volatile static AMEFResources jdbResources;
 	
-	private JDBEncoder encoder;
+	private AMEFEncoder encoder;
 	
-	private JDBDecoder decoder;
+	private AMEFDecoder decoder;
 	
-	private static JdbResources get()
+	private static AMEFResources get()
 	{
 		if(jdbResources==null) 
 		{
-			synchronized(JdbResources.class)
+			synchronized(AMEFResources.class)
 			{
 				if(jdbResources==null)
 				{
-					jdbResources= new JdbResources();
+					jdbResources= new AMEFResources();
 				}
 			}
 		}
 		return jdbResources;
 	}
 	
-	public static JDBEncoder getEncoder()
+	public static AMEFEncoder getEncoder()
 	{
-		return new JDBEncoder();
+		return new AMEFEncoder();
 	}
 	
-	public static JDBDecoder getDecoder()
+	public static AMEFDecoder getDecoder()
 	{
-		return new JDBDecoder();
+		return new AMEFDecoder();
 	}
 	
 	public static byte[] longToByteArray(long l,int ind) 

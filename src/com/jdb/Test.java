@@ -33,8 +33,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.amef.AMEFDecodeException;
 import com.amef.AMEFEncodeException;
-import com.amef.JDBDecoder;
-import com.amef.JDBObject;
+import com.amef.AMEFDecoder;
+import com.amef.AMEFObject;
+import com.amef.AMEFResources;
 
 public class Test
 {
@@ -82,9 +83,9 @@ public class Test
 	public static void main(String[] args) throws Exception
 	{	
 		//new File("jdb").delete();
-		JDBObject onk = new JDBObject();
+		AMEFObject onk = new AMEFObject();
 		onk.addPacket(new Date());
-		new JDBDecoder().decodeB(JdbResources.getEncoder().encodeWL(onk, true), false, true);
+		new AMEFDecoder().decodeB(AMEFResources.getEncoder().encodeWL(onk, true), false, true);
 		String[] misc = null;
 		String[] colTypesNames =  new String[]{"id|int","name|string","date1|string","flag|boolean","ind|char"};
 		Map<String,String> mappi = new HashMap<String,String>();
@@ -103,7 +104,7 @@ public class Test
 		Temp t = new Temp();
 		t.id = 1;
 		t.name = "name";*/
-		JDBObject object = new JDBObject();
+		AMEFObject object = new AMEFObject();
 		object.addPacket(1);
 		object.addPacket("namsfsfe");
 		object.addPacket("11-12-2010 12:12:12");
@@ -187,9 +188,9 @@ public class Test
 		object.addPacket("11-12-2010 12:12:12");
 		object.addPacket(true);
 		object.addPacket('Y');*/
-		List<JDBObject> objects1 = new ArrayList<JDBObject>();
+		List<AMEFObject> objects1 = new ArrayList<AMEFObject>();
 		long sti = System.currentTimeMillis();
-		object = new JDBObject();
+		object = new AMEFObject();
 		object.addPacket(101);
 		object.addPacket("namsfsfe1");
 		object.addPacket("12122010 121212");
@@ -198,7 +199,7 @@ public class Test
 		objects1.add(object);
 		for(int i=0;i<100;i++)
 		{
-			object = new JDBObject();
+			object = new AMEFObject();
 			object.addPacket(i+1);
 			object.addPacket("namsfsfe");
 			object.addPacket("11122010 121212");
@@ -214,7 +215,7 @@ public class Test
 		objects1.clear();
 		for(int i=0;i<100;i++)
 		{
-			object = new JDBObject();
+			object = new AMEFObject();
 			object.addPacket(i+1);
 			object.addPacket("namsfsfe");
 			object.addPacket("11122010 121212");
@@ -222,7 +223,7 @@ public class Test
 			object.addPacket('Y');
 			objects1.add(object);
 		}
-		object = new JDBObject();
+		object = new AMEFObject();
 		object.addPacket(101);
 		object.addPacket("namsfsfe2");
 		object.addPacket("11122010 121212");
@@ -236,7 +237,7 @@ public class Test
 		objects1.clear();
 		for(int i=0;i<100;i++)
 		{
-			object = new JDBObject();
+			object = new AMEFObject();
 			object.addPacket(i+1);
 			object.addPacket("namsfsfe");
 			object.addPacket("11122010 121212");
@@ -244,7 +245,7 @@ public class Test
 			object.addPacket('Y');
 			objects1.add(object);
 		}
-		object = new JDBObject();
+		object = new AMEFObject();
 		object.addPacket(101);
 		object.addPacket("namsfsfe2");
 		object.addPacket("11122010 121212");
@@ -255,7 +256,7 @@ public class Test
 		System.out.println("Time for Non-indexed Inserts = "+(System.currentTimeMillis()-sti));
 		objects1 = null;
 		System.exit(0);
-		/*object = new JDBObject();
+		/*object = new AMEFObject();
 		object.addPacket(13);
 		object.addPacket("saumil");
 		object.addPacket("11-12-2010 12:12:12");
@@ -263,7 +264,7 @@ public class Test
 		object.addPacket('Y');
 		objects1.add(object);
 		
-		object = new JDBObject();
+		object = new AMEFObject();
 		object.addPacket(11);
 		object.addPacket("saumil");
 		object.addPacket("11-12-2010 12:12:12");
@@ -271,7 +272,7 @@ public class Test
 		object.addPacket('Y');
 		objects1.add(object);
 		
-		object = new JDBObject();
+		object = new AMEFObject();
 		object.addPacket(14);
 		object.addPacket("saumil1");
 		object.addPacket("11-12-2010 12:12:12");
@@ -411,7 +412,7 @@ public class Test
 		
 		//System.out.println("Selects start");
 		//long st2 = System.currentTimeMillis();
-		//List<JDBObject> objectsa = con.selectAMEFObject("temp", "temp", null);
+		//List<AMEFObject> objectsa = con.selectAMEFObject("temp", "temp", null);
 		//System.out.println(objectsa.size()+"\nTime reqd for selects = "+(System.currentTimeMillis()-st2));
 		
 		DBManager.shutdown();		

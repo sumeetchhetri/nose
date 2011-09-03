@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.amef.AMEFEncodeException;
-import com.amef.JDBObject;
+import com.amef.AMEFObject;
 import com.jdb.DBManager;
-import com.jdb.JdbResources;
+import com.amef.AMEFResources;
 import com.jdb.Table;
 
 public final class JdbFlusher implements Runnable
@@ -158,8 +158,8 @@ public final class JdbFlusher implements Runnable
 					{
 						bos[index].write(row);
 						ByteBuffer buf = ByteBuffer.allocate(8);
-						buf.put(JdbResources.longToByteArray(id,4));						
-						buf.put(JdbResources.longToByteArray(table.currpos,4));
+						buf.put(AMEFResources.longToByteArray(id,4));						
+						buf.put(AMEFResources.longToByteArray(table.currpos,4));
 						buf.flip();
 						bos[2].write(buf.array());
 						table.currpos += row.length;
@@ -191,8 +191,8 @@ public final class JdbFlusher implements Runnable
 					{
 						bos[index].write(row);
 						ByteBuffer buf = ByteBuffer.allocate(8);
-						buf.put(JdbResources.longToByteArray(id,4));						
-						buf.put(JdbResources.longToByteArray(table.currpos,4));
+						buf.put(AMEFResources.longToByteArray(id,4));						
+						buf.put(AMEFResources.longToByteArray(table.currpos,4));
 						buf.flip();
 						bos[2].write(buf.array());
 						table.currpos += row.length;
@@ -225,8 +225,8 @@ public final class JdbFlusher implements Runnable
 					{
 						bos[index].write(row);
 						ByteBuffer buf = ByteBuffer.allocate(8);
-						buf.put(JdbResources.longToByteArray(id,4));
-						buf.put(JdbResources.longToByteArray(table.currpos,4));
+						buf.put(AMEFResources.longToByteArray(id,4));
+						buf.put(AMEFResources.longToByteArray(table.currpos,4));
 						buf.flip();
 						bos[2].write(buf.array());
 						table.currpos += row.length;
@@ -299,11 +299,11 @@ public final class JdbFlusher implements Runnable
 		}
 		flush[index] = true;
 	}
-	public void write(JDBObject row)
+	public void write(AMEFObject row)
 	{
 		try
 		{
-			write(JdbResources.getEncoder().encodeB(row, true));
+			write(AMEFResources.getEncoder().encodeB(row, true));
 		}
 		catch (AMEFEncodeException e)
 		{
