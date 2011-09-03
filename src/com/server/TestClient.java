@@ -590,9 +590,9 @@ public final class TestClient
 			long st = System.currentTimeMillis();
 			Session session = new Session();
 			session.beginTransaction();
-			for (int i = 0; i < 1000000; i++)
+			for (int i = 0; i < 100; i++)
 			{
-				//session.save(tem);
+				session.save(tem);
 				//session.flush();
 			}
 			com.Temp tem1 = new com.Temp();
@@ -671,13 +671,13 @@ public final class TestClient
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(!obh.getPackets().get(i).isNullNumber())_object.set"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-							"(com.jdb.AMEFResources.byteArrayToInt(obh.getPackets().get(i++).getValue()));\n");
+							"(com.amef.AMEFResources.byteArrayToInt(obh.getPackets().get(i++).getValue()));\n");
 				}
 				else if((entry.getValue().equals("long") || entry.getValue().equals("java.lang.Long"))
 						/* && mappi.get(entry.getKey())!=null*/)
 				{
 					build.append("\t\tif(!obh.getPackets().get(i).isNullNumber())_object.set"+entry.getKey().substring(0,1).toUpperCase() + entry.getKey().substring(1)+
-					"(com.jdb.AMEFResources.byteArrayToLong(obh.getPackets().get(i++).getValue()));\n");
+					"(com.amef.AMEFResources.byteArrayToLong(obh.getPackets().get(i++).getValue()));\n");
 				}
 				else if((entry.getValue().equals("double") || entry.getValue().equals("java.lang.Double"))
 						/* && mappi.get(entry.getKey())!=null*/)
